@@ -28,8 +28,12 @@ open build/DerivedData/Build/Products/Debug/Wake.app
 
 The Xcode project is generated from `project.yml` and isn't checked in.
 
-The app icon is drawn in code; to regenerate it, run `swift Scripts/make-icon.swift`.
+The app icon (a page leaving a wake of itself) is drawn in code; to regenerate it, run `swift Scripts/make-icon.swift`.
 
 ## Layout
 
 One feature per folder under `Wake/Features` (Trail, Deck, Threads, Moments, PopOut, Live, Developer, Apps, Settings, …), with app wiring in `Wake/App` and shared helpers in `Wake/Support`. `HANDOFF.md` describes the architecture in more detail.
+
+## License
+
+MIT. See [LICENSE](LICENSE).
