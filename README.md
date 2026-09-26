@@ -40,7 +40,13 @@ Wake is in **beta** (every 0.x release): expect rough edges, and please report w
 
 Download the latest `.dmg` from [Releases](https://github.com/amiralibg/wake/releases/latest). Wake checks for updates once a day (Wake ▸ Check for Updates… or Settings ▸ General) and installs them when you say so.
 
-Until releases are signed with a Developer ID, macOS asks before opening a downloaded copy the first time: open **System Settings ▸ Privacy & Security** and choose **Open Anyway**.
+Wake isn't signed with an Apple Developer ID yet, so macOS blocks a downloaded copy ("can't be opened" or "is damaged"). After dragging Wake to Applications, run this once in Terminal:
+
+```bash
+xattr -cr /Applications/Wake.app
+```
+
+It removes the quarantine flag macOS puts on downloaded files; after that Wake opens normally. (Alternatively: try to open Wake, then choose **Open Anyway** in **System Settings ▸ Privacy & Security**.)
 
 ## Releasing
 
