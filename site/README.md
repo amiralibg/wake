@@ -1,8 +1,20 @@
 # Wake website
 
-Two static pages: `index.html` (download) and `about.html`. No build step. The hero water is a WebGL port of the onboarding shader (`Wake/Features/Onboarding/WakeWaterShader.swift`), in `assets/water.js`.
+The download and about pages, served by nginx.
 
-The download button, version, date and size come from the latest GitHub release when the page loads. If that request fails, the links fall back to the pinned `v0.1.0` disk image, so update those in the HTML after a release.
+## Deploy on Dokploy
+
+1. In your DNS, add an `A` record for the subdomain (e.g. `wake`) pointing at the VPS. On Cloudflare, turn the proxy off or set SSL to "Full" so Let's Encrypt can issue the certificate.
+2. In Dokploy, create a project, then **Create Service › Compose**.
+3. Provider: GitHub, repository `amiralibg/wake`, branch `main`. Set **Compose Path** to `./site/docker-compose.yml` and save.
+4. Click **Deploy**.
+5. In the **Domains** tab, add the domain: service `wake-site`, path `/`, container port `80`, HTTPS on with Let's Encrypt.
+6. **Deploy** again. A Compose service only picks up a new domain on redeploy.
+7. Open `https://<your domain>/health`; it should answer `ok`.
+
+To rebuild on every push to `main`, turn on **Autodeploy** in the service's General tab.
+
+If you get a 502, check that the domain's container port is `80` and that the container is running (`docker ps -a | grep wake` on the VPS, or the service's Logs tab).
 
 ## Run locally
 
@@ -10,13 +22,8 @@ The download button, version, date and size come from the latest GitHub release 
 docker build -t wake-site . && docker run --rm -p 8080:80 wake-site
 ```
 
-Then open http://localhost:8080. Any static server works too (`python3 -m http.server` from this folder), though `/about` without `.html` only resolves under nginx.
+Then open http://localhost:8080.
 
-## Deploy on Dokploy
+## After a release
 
-Either way, point your domain at container port 80 in Dokploy; Traefik handles TLS.
-
-- **Compose:** new Compose service from this repo, Compose Path `./site/docker-compose.yml`, then add the domain on service `wake-site`.
-- **Application:** new Application from this repo, Build Type `Dockerfile`, Docker Context Path `site`, Dockerfile Path `site/Dockerfile`.
-
-The container answers `GET /health` with `ok`, which the Dockerfile's `HEALTHCHECK` uses.
+The download button, version and size load from the latest GitHub release. If that request fails, the page falls back to the `v0.1.0` links written in `index.html` and `about.html`; bump those when you release.

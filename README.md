@@ -6,6 +6,21 @@
 
 Wake is a native macOS browser built with SwiftUI, AppKit and WebKit. No Chromium, no Electron.
 
+![A Wake window: the Kelvin wake pattern article scrolled off to the left, the Lord Kelvin article, and the Wake repository open as columns side by side](docs/screenshots/trail.png)
+
+<table>
+  <tr>
+    <td width="33%"><img src="docs/screenshots/deck.png" alt="The Deck: four threads as live cards, one marked Updated"></td>
+    <td width="33%"><img src="docs/screenshots/devtools.png" alt="Developer mode on localhost: the page beside a DevTools column showing the Elements tree and styles"></td>
+    <td width="33%"><img src="docs/screenshots/welcome.png" alt="The welcome tour: a paper boat and its wake on dark water, under the words Browse in a wake"></td>
+  </tr>
+  <tr>
+    <td align="center">The Deck (⌘K)</td>
+    <td align="center">Developer mode</td>
+    <td align="center">The welcome tour</td>
+  </tr>
+</table>
+
 ## What's in it
 
 - **The trail.** Links open as columns to the right, Niri-style. One column fills the window, two share it, more scroll. Each column resizes on its own edges without squeezing its neighbours.
