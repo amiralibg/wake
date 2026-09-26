@@ -1,0 +1,172 @@
+# Builds, signs and publishes a Wake release, with a Sparkle appcast so installed
+# copies update themselves.
+#
+# Start one by pushing a tag:   git tag v0.1.0 && git push origin v0.1.0
+# or from the Actions tab (Run workflow) with a version number.
+#
+# Secrets:
+#   SPARKLE_PRIVATE_KEY   required. Signs the update archive; its public half is
+#                         SPARKLE_PUBLIC_ED_KEY in project.yml.
+#   Optional, for a Developer ID signed and notarized build (otherwise ad hoc):
+#   DEVELOPER_ID_CERTIFICATE (base64 .p12), DEVELOPER_ID_CERTIFICATE_PASSWORD,
+#   APPLE_TEAM_ID, APPLE_ID, APPLE_APP_PASSWORD (app-specific password).
+name: Release
+
+on:
+  push:
+    tags: ["v*.*.*"]
+  workflow_dispatch:
+    inputs:
+      version:
+        description: "Version to release, e.g. 0.1.0"
+        required: true
+
+permissions:
+  contents: write
+
+concurrency:
+  group: release
+  cancel-in-progress: false
+
+jobs:
+  release:
+    runs-on: macos-26
+    env:
+      RAW_VERSION: ${{ github.event.inputs.version || github.ref_name }}
+      HAS_DEVELOPER_ID: ${{ secrets.DEVELOPER_ID_CERTIFICATE != '' }}
+      GH_TOKEN: ${{ github.token }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - uses: maxim-lobanov/setup-xcode@v1
+        with:
+          xcode-version: latest-stable
+
+      - name: Work out the version
+        run: |
+          VERSION="${RAW_VERSION#v}"
+          if [[ ! "$VERSION" =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
+            echo "::error::'$RAW_VERSION' isn't a version like 0.1.0"; exit 1
+          fi
+          echo "VERSION=$VERSION" >> "$GITHUB_ENV"
+          echo "TAG=v$VERSION" >> "$GITHUB_ENV"
+          # Sparkle compares build numbers: the commit count only ever grows.
+          echo "BUILD=$(git rev-list --count HEAD)" >> "$GITHUB_ENV"
+
+      - name: Check the signing key
+        env:
+          SPARKLE_PRIVATE_KEY: ${{ secrets.SPARKLE_PRIVATE_KEY }}
+        run: |
+          if [ -z "$SPARKLE_PRIVATE_KEY" ]; then
+            echo "::error::Add the SPARKLE_PRIVATE_KEY secret first (see README ▸ Releasing)."; exit 1
+          fi
+
+      - name: Generate the project
+        run: |
+          brew install xcodegen
+          xcodegen generate
+
+      - name: Build
+        run: |
+          xcodebuild -project Wake.xcodeproj -scheme Wake -configuration Release \
+            -derivedDataPath build/DerivedData \
+            MARKETING_VERSION="$VERSION" CURRENT_PROJECT_VERSION="$BUILD" \
+            build | tail -n 20
+          mkdir -p dist
+          ditto build/DerivedData/Build/Products/Release/Wake.app dist/Wake.app
+
+      - name: Sign with Developer ID
+        if: env.HAS_DEVELOPER_ID == 'true'
+        env:
+          CERTIFICATE: ${{ secrets.DEVELOPER_ID_CERTIFICATE }}
+          CERTIFICATE_PASSWORD: ${{ secrets.DEVELOPER_ID_CERTIFICATE_PASSWORD }}
+          TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
+        run: |
+          KEYCHAIN="$RUNNER_TEMP/release.keychain-db"
+          security create-keychain -p "" "$KEYCHAIN"
+          security set-keychain-settings -lut 3600 "$KEYCHAIN"
+          security unlock-keychain -p "" "$KEYCHAIN"
+          echo "$CERTIFICATE" | base64 --decode > "$RUNNER_TEMP/certificate.p12"
+          security import "$RUNNER_TEMP/certificate.p12" -k "$KEYCHAIN" -P "$CERTIFICATE_PASSWORD" -T /usr/bin/codesign
+          security set-key-partition-list -S apple-tool:,apple: -s -k "" "$KEYCHAIN"
+          security list-keychains -d user -s "$KEYCHAIN" $(security list-keychains -d user | tr -d '"')
+          IDENTITY=$(security find-identity -v -p codesigning "$KEYCHAIN" | grep "$TEAM_ID" | head -1 | awk '{print $2}')
+          # Inside out, as Sparkle documents: its helpers, the framework, then the app.
+          SPARKLE=dist/Wake.app/Contents/Frameworks/Sparkle.framework/Versions/B
+          sign() { codesign --force --timestamp --options runtime --sign "$IDENTITY" "$@"; }
+          sign "$SPARKLE/XPCServices/Installer.xpc"
+          sign --preserve-metadata=entitlements "$SPARKLE/XPCServices/Downloader.xpc"
+          sign "$SPARKLE/Autoupdate"
+          sign "$SPARKLE/Updater.app"
+          sign dist/Wake.app/Contents/Frameworks/Sparkle.framework
+          sign --entitlements Wake/Resources/Wake.entitlements dist/Wake.app
+          codesign --verify --deep --strict dist/Wake.app
+
+      - name: Notarize
+        if: env.HAS_DEVELOPER_ID == 'true'
+        env:
+          APPLE_ID: ${{ secrets.APPLE_ID }}
+          APPLE_APP_PASSWORD: ${{ secrets.APPLE_APP_PASSWORD }}
+          TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
+        run: |
+          ditto -c -k --keepParent dist/Wake.app dist/notarize.zip
+          xcrun notarytool submit dist/notarize.zip --apple-id "$APPLE_ID" --team-id "$TEAM_ID" --password "$APPLE_APP_PASSWORD" --wait
+          xcrun stapler staple dist/Wake.app
+          rm dist/notarize.zip
+
+      - name: Package
+        run: |
+          cd dist
+          ditto -c -k --sequesterRsrc --keepParent Wake.app "Wake-$VERSION.zip"
+          mkdir dmg && ditto Wake.app dmg/Wake.app && ln -s /Applications dmg/Applications
+          hdiutil create -volname "Wake $VERSION" -srcfolder dmg -ov -format UDZO "Wake-$VERSION.dmg"
+          rm -rf dmg
+
+      - name: Sign the update
+        env:
+          SPARKLE_PRIVATE_KEY: ${{ secrets.SPARKLE_PRIVATE_KEY }}
+        run: |
+          SIGN_UPDATE=$(find build/DerivedData/SourcePackages/artifacts -name sign_update -type f | head -1)
+          printf '%s' "$SPARKLE_PRIVATE_KEY" > "$RUNNER_TEMP/sparkle.key"
+          # Prints: sparkle:edSignature="…" length="…"
+          echo "SPARKLE_ATTRIBUTES=$("$SIGN_UPDATE" --ed-key-file "$RUNNER_TEMP/sparkle.key" "dist/Wake-$VERSION.zip")" >> "$GITHUB_ENV"
+          rm "$RUNNER_TEMP/sparkle.key"
+
+      - name: Publish the release
+        run: |
+          if gh release view "$TAG" > /dev/null 2>&1; then
+            gh release upload "$TAG" "dist/Wake-$VERSION.zip" "dist/Wake-$VERSION.dmg" --clobber
+          else
+            gh release create "$TAG" "dist/Wake-$VERSION.zip" "dist/Wake-$VERSION.dmg" \
+              --title "Wake $VERSION" --generate-notes --target "$GITHUB_SHA"
+          fi
+
+      - name: Publish the appcast
+        run: |
+          # The release notes, rendered to HTML for Sparkle's update window.
+          gh release view "$TAG" --json body --jq .body > dist/notes.md
+          gh api markdown -f text="$(cat dist/notes.md)" -f mode=gfm -f context="$GITHUB_REPOSITORY" > dist/notes.html
+          PUB_DATE=$(LC_ALL=C date -u "+%a, %d %b %Y %H:%M:%S +0000")
+          URL="https://github.com/$GITHUB_REPOSITORY/releases/download/$TAG/Wake-$VERSION.zip"
+          cat > dist/appcast.xml <<XML
+          <?xml version="1.0" encoding="utf-8"?>
+          <rss version="2.0" xmlns:sparkle="http://www.andymatuschak.org/xml-namespaces/sparkle" xmlns:dc="http://purl.org/dc/elements/1.1/">
+            <channel>
+              <title>Wake</title>
+              <link>https://github.com/$GITHUB_REPOSITORY</link>
+              <item>
+                <title>Wake $VERSION</title>
+                <pubDate>$PUB_DATE</pubDate>
+                <sparkle:version>$BUILD</sparkle:version>
+                <sparkle:shortVersionString>$VERSION</sparkle:shortVersionString>
+                <sparkle:minimumSystemVersion>14.0</sparkle:minimumSystemVersion>
+                <description><![CDATA[$(cat dist/notes.html)]]></description>
+                <enclosure url="$URL" type="application/octet-stream" $SPARKLE_ATTRIBUTES />
+              </item>
+            </channel>
+          </rss>
+          XML
+          xmllint --noout dist/appcast.xml
+          gh release upload "$TAG" dist/appcast.xml --clobber

@@ -1,0 +1,28 @@
+# Builds Wake on every push and pull request, and fails on compiler warnings.
+name: Build
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  build:
+    runs-on: macos-26
+    steps:
+      - uses: actions/checkout@v4
+      - uses: maxim-lobanov/setup-xcode@v1
+        with:
+          xcode-version: latest-stable
+      - name: Generate the project
+        run: |
+          brew install xcodegen
+          xcodegen generate
+      - name: Build
+        run: |
+          set -o pipefail
+          xcodebuild -project Wake.xcodeproj -scheme Wake -configuration Debug \
+            -derivedDataPath build/DerivedData build 2>&1 | tee build.log | tail -n 20
+          if grep -E "^/.*\.swift:[0-9]+:[0-9]+: warning:" build.log; then
+            echo "::error::The build has warnings."; exit 1
+          fi

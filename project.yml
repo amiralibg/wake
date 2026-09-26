@@ -4,6 +4,10 @@ options:
   deploymentTarget:
     macOS: "14.0"
   createIntermediateGroups: true
+packages:
+  Sparkle:
+    url: https://github.com/sparkle-project/Sparkle
+    from: 2.6.0
 settings:
   base:
     SWIFT_VERSION: "6.0"
@@ -15,12 +19,21 @@ targets:
     platform: macOS
     sources:
       - path: Wake
+    dependencies:
+      - package: Sparkle
     info:
       path: Wake/Resources/Info.plist
       properties:
         CFBundleDisplayName: Wake
-        CFBundleShortVersionString: "0.1.0"
-        CFBundleVersion: "1"
+        CFBundleShortVersionString: $(MARKETING_VERSION)
+        CFBundleVersion: $(CURRENT_PROJECT_VERSION)
+        # Sparkle: the appcast is attached to the newest GitHub release.
+        SUFeedURL: https://github.com/amiralibg/wake/releases/latest/download/appcast.xml
+        SUPublicEDKey: $(SPARKLE_PUBLIC_ED_KEY)
+        SUEnableAutomaticChecks: true
+        SUScheduledCheckInterval: 86400
+        # Sandboxed: Sparkle installs through its XPC launcher service.
+        SUEnableInstallerLauncherService: true
         LSApplicationCategoryType: public.app-category.productivity
         LSMinimumSystemVersion: "14.0"
         NSAppTransportSecurity:
@@ -33,9 +46,36 @@ targets:
         com.apple.security.network.client: true
         com.apple.security.files.user-selected.read-only: true
         com.apple.security.files.bookmarks.app-scope: true
+        # Sparkle's installer, which a sandboxed app reaches by these Mach names.
+        com.apple.security.temporary-exception.mach-lookup.global-name:
+          - app.wake.Wake-spks
+          - app.wake.Wake-spki
+        # Read-only access to other browsers' profiles, for File ▸ Import from Another
+        # Browser. Safari's folders are also protected by TCC (Full Disk Access).
+        com.apple.security.temporary-exception.files.home-relative-path.read-only:
+          - /Library/Application Support/Google/Chrome/
+          - /Library/Application Support/Google/Chrome Beta/
+          - /Library/Application Support/Arc/User Data/
+          - /Library/Application Support/Dia/User Data/
+          - /Library/Application Support/BraveSoftware/Brave-Browser/
+          - /Library/Application Support/Microsoft Edge/
+          - /Library/Application Support/Vivaldi/
+          - /Library/Application Support/com.operasoftware.Opera/
+          - /Library/Application Support/net.imput.helium/
+          - /Library/Application Support/Chromium/
+          - /Library/Application Support/Firefox/
+          - /Library/Application Support/zen/
+          - /Library/Application Support/Waterfox/
+          - /Library/Safari/
+          - /Library/Containers/com.apple.Safari/Data/Library/Cookies/
     settings:
       base:
         PRODUCT_BUNDLE_IDENTIFIER: app.wake.Wake
+        # The release workflow overrides these from the git tag (v0.1.0 → 0.1.0).
+        MARKETING_VERSION: 0.1.0
+        CURRENT_PROJECT_VERSION: 1
+        # Verifies downloaded updates; the private half signs releases in CI.
+        SPARKLE_PUBLIC_ED_KEY: Nz5xOodpSjqucdRur4bzcmCUPEaJGX4Zursfq/Q7xIg=
         CODE_SIGN_IDENTITY: "-"
         CODE_SIGN_STYLE: Manual
         ENABLE_HARDENED_RUNTIME: YES

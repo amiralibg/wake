@@ -10,5 +10,28 @@
 	<true/>
 	<key>com.apple.security.network.client</key>
 	<true/>
+	<key>com.apple.security.temporary-exception.files.home-relative-path.read-only</key>
+	<array>
+		<string>/Library/Application Support/Google/Chrome/</string>
+		<string>/Library/Application Support/Google/Chrome Beta/</string>
+		<string>/Library/Application Support/Arc/User Data/</string>
+		<string>/Library/Application Support/Dia/User Data/</string>
+		<string>/Library/Application Support/BraveSoftware/Brave-Browser/</string>
+		<string>/Library/Application Support/Microsoft Edge/</string>
+		<string>/Library/Application Support/Vivaldi/</string>
+		<string>/Library/Application Support/com.operasoftware.Opera/</string>
+		<string>/Library/Application Support/net.imput.helium/</string>
+		<string>/Library/Application Support/Chromium/</string>
+		<string>/Library/Application Support/Firefox/</string>
+		<string>/Library/Application Support/zen/</string>
+		<string>/Library/Application Support/Waterfox/</string>
+		<string>/Library/Safari/</string>
+		<string>/Library/Containers/com.apple.Safari/Data/Library/Cookies/</string>
+	</array>
+	<key>com.apple.security.temporary-exception.mach-lookup.global-name</key>
+	<array>
+		<string>app.wake.Wake-spks</string>
+		<string>app.wake.Wake-spki</string>
+	</array>
 </dict>
 </plist>
