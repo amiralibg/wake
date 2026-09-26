@@ -8,6 +8,8 @@ struct TrailStrip: View {
     let onSelect: (BrowserPage.ID) -> Void
     let onClose: (BrowserPage) -> Void
     var onPin: ((BrowserPage) -> Void)?
+    /// Off in narrow windows: the focused chip stays an icon like the rest.
+    var showsFocusedTitle = true
 
     @Namespace private var selection
     private let maxVisible = 7
@@ -17,7 +19,7 @@ struct TrailStrip: View {
         HStack(spacing: 2) {
             if leading > 0 { overflowBadge(leading) }
             ForEach(visible) { page in
-                TrailChip(page: page, isFocused: page.id == focusedID, selection: selection) {
+                TrailChip(page: page, isFocused: page.id == focusedID, showsTitle: showsFocusedTitle, selection: selection) {
                     onSelect(page.id)
                 }
                 .contextMenu {
@@ -53,6 +55,7 @@ struct TrailStrip: View {
 private struct TrailChip: View {
     let page: BrowserPage
     let isFocused: Bool
+    var showsTitle = true
     let selection: Namespace.ID
     let action: () -> Void
 
@@ -77,7 +80,7 @@ private struct TrailChip: View {
                                 .transition(.scale.combined(with: .opacity))
                         }
                     }
-                if isFocused {
+                if isFocused, showsTitle {
                     Text(page.displayTitle)
                         .font(.system(size: 12, weight: .medium))
                         .lineLimit(1)
@@ -86,7 +89,7 @@ private struct TrailChip: View {
                         .transition(.opacity.combined(with: .scale(scale: 0.9, anchor: .leading)))
                 }
             }
-            .padding(.horizontal, isFocused ? 9 : 6)
+            .padding(.horizontal, isFocused && showsTitle ? 9 : 6)
             .frame(height: 24)
             .background {
                 if isFocused {

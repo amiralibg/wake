@@ -6,9 +6,14 @@ struct DevIsland: View {
     @Environment(BrowserModel.self) private var browser
     let page: BrowserPage
 
+    /// Narrow windows: the branch (or "Link folder") shows as its icon, so the toolbar
+    /// keeps room for the address bar. Decided by the toolbar from its own width;
+    /// a `ViewThatFits` here fed back into the window's layout and looped.
+    var compact = false
+
     var body: some View {
         HStack(spacing: 2) {
-            BranchLabel(page: page)
+            BranchLabel(page: page, compact: compact)
             if case .none = page.devtools.hmr {} else {
                 HMRBadge(state: page.devtools.hmr, lastUpdate: page.devtools.lastHotUpdate)
                     .padding(.horizontal, 6)
@@ -51,6 +56,8 @@ struct DevIsland: View {
 /// folder it offers to link one.
 private struct BranchLabel: View {
     let page: BrowserPage
+    /// Icon only (the text moves to the tooltip).
+    var compact = false
     @State private var branch: String?
 
     var body: some View {
@@ -59,10 +66,11 @@ private struct BranchLabel: View {
         Group {
             if let project, project.folderPath != nil {
                 Label(branch ?? "—", systemImage: "arrow.triangle.branch")
+                    .labelStyle(CompactLabelStyle(compact: compact))
                     .font(.system(size: 12, weight: .medium))
                     .lineLimit(1)
                     .padding(.horizontal, 8)
-                    .help(project.folderPath ?? "")
+                    .help(compact ? "\(branch ?? "—") · \(project.folderPath ?? "")" : project.folderPath ?? "")
                     .task(id: project.id) {
                         while !Task.isCancelled {
                             branch = store.gitBranch(of: project)
@@ -75,6 +83,7 @@ private struct BranchLabel: View {
                     if let base { _ = store.chooseFolder(for: base) }
                 } label: {
                     Label("Link folder", systemImage: "folder.badge.plus")
+                        .labelStyle(CompactLabelStyle(compact: compact))
                         .font(.system(size: 12))
                         .padding(.horizontal, 8)
                 }
@@ -107,6 +116,20 @@ struct DevicePresetButtons: View {
             ForEach(DevicePreset.tablets) { preset in
                 Button(preset.menuTitle) { action(preset) }
             }
+        }
+    }
+}
+
+/// Title and icon, or the icon alone.
+private struct CompactLabelStyle: LabelStyle {
+    let compact: Bool
+
+    func makeBody(configuration: Configuration) -> some View {
+        if compact {
+            // The system's icon-only style keeps the title for VoiceOver.
+            Label(configuration).labelStyle(.iconOnly)
+        } else {
+            Label(configuration)
         }
     }
 }

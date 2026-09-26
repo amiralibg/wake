@@ -14,25 +14,25 @@ struct SearchResult: Identifiable, Hashable, Sendable {
 
 /// Suggestions and real results, so search lives in the palette rather than a results page.
 ///
-/// Limitation: there is no free, keyless web-search API. Suggestions come from
-/// DuckDuckGo's public autocomplete endpoint. Results need a Brave Search API key
-/// (free tier available), stored in the Keychain via Settings → Search. Without a key
-/// the palette offers "Open results on DuckDuckGo" instead. We deliberately don't scrape
-/// DuckDuckGo's HTML results: it answers non-browser clients with a bot check.
+/// Limitation: there is no free, keyless web-search API. Suggestions come from the
+/// chosen engine's public OpenSearch endpoint (see `SearchEngine.suggestionsTemplate`).
+/// Results inside the palette need a Brave Search API key (free tier available), stored
+/// in the Keychain via Settings → Search. Without a key the palette opens the engine's
+/// results page instead. We deliberately don't scrape results pages: engines answer
+/// non-browser clients with bot checks.
 struct SearchService: Sendable {
     var session: URLSession = .shared
 
-    func suggestions(for query: String) async throws -> [String] {
-        var components = URLComponents(string: "https://duckduckgo.com/ac/")!
-        components.queryItems = [.init(name: "q", value: query), .init(name: "type", value: "list")]
-        let (data, _) = try await session.data(from: components.url!)
+    func suggestions(for query: String, from engine: SearchEngine) async throws -> [String] {
+        guard let url = SearchEngine.url(from: engine.suggestionsTemplate, query: query) else { return [] }
+        let (data, _) = try await session.data(from: url)
         let json = try JSONSerialization.jsonObject(with: data) as? [Any]
         let suggestions = json?.dropFirst().first as? [String] ?? []
         return suggestions.filter { $0.caseInsensitiveCompare(query) != .orderedSame }
     }
 
-    func results(for query: String) async throws -> [SearchResult] {
-        guard let key = SearchKeyStore.braveAPIKey else { return [] }
+    func results(for query: String, key: String?) async throws -> [SearchResult] {
+        guard let key else { return [] }
         var components = URLComponents(string: "https://api.search.brave.com/res/v1/web/search")!
         components.queryItems = [.init(name: "q", value: query), .init(name: "count", value: "8")]
         var request = URLRequest(url: components.url!)
@@ -41,12 +41,6 @@ struct SearchService: Sendable {
         let (data, response) = try await session.data(for: request)
         guard (response as? HTTPURLResponse)?.statusCode == 200 else { throw URLError(.badServerResponse) }
         return try JSONDecoder().decode(BraveResponse.self, from: data).searchResults
-    }
-
-    static func resultsPageURL(for query: String) -> URL {
-        var components = URLComponents(string: "https://duckduckgo.com/")!
-        components.queryItems = [.init(name: "q", value: query)]
-        return components.url!
     }
 }
 

@@ -5,6 +5,7 @@ struct MainWindowView: View {
     @Environment(DeckSettings.self) private var deck
     @Environment(DeveloperSettings.self) private var developer
     @State private var browser = BrowserModel()
+    @AppStorage(OnboardingView.completedKey) private var onboardingCompleted = false
 
     var body: some View {
         ZStack(alignment: .top) {
@@ -16,14 +17,16 @@ struct MainWindowView: View {
                 }
                 StageView()
             }
-            // Covered by the Moments library: keep VoiceOver out of it too.
-            .accessibilityHidden(browser.isMomentsOpen)
+            // Covered by the Moments library or the welcome tour: keep VoiceOver out of it too.
+            .accessibilityHidden(browser.isMomentsOpen || !onboardingCompleted)
             AppPanel()
-            if browser.showsAppCapsule {
+            if browser.showsAppCapsule, onboardingCompleted {
                 AppCapsule()
-                    .onHover { inside in if !inside { browser.concealCapsule() } }
+                    .onHover { inside in browser.capsuleHovered(inside) }
                     .padding(.leading, 8)
-                    .padding(.top, browser.isZen ? Metrics.stageInset : Metrics.toolbarHeight + 4)
+                    // In Zen it tucks under the top edge, unless the floating toolbar is
+                    // showing: then it sits below it rather than behind it.
+                    .padding(.top, browser.isZen && !browser.isChromeRevealed ? Metrics.stageInset : Metrics.toolbarHeight + 4)
                     .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
                     .transition(.move(edge: .leading).combined(with: .opacity))
             }
@@ -35,10 +38,18 @@ struct MainWindowView: View {
             MomentsLibrary()
             PaletteOverlay()
             SettingsOverlay()
+            if !onboardingCompleted {
+                OnboardingView {
+                    withAnimation(.easeInOut(duration: 0.45)) { onboardingCompleted = true }
+                    if browser.trail.columns.isEmpty { browser.showPalette() }
+                }
+                .transition(.opacity.combined(with: .scale(scale: 1.03)))
+                .zIndex(10)
+            }
         }
         .ignoresSafeArea()
         .background(WindowConfigurator(
-            trafficLightsHidden: browser.isZen && !browser.isChromeRevealed && !browser.isMomentsOpen,
+            trafficLightsHidden: browser.isZen && !browser.isChromeRevealed && !browser.isMomentsOpen && onboardingCompleted,
             onClose: browser.windowWillClose,
             onWindow: { browser.window = $0 }
         ))
@@ -53,6 +64,7 @@ struct MainWindowView: View {
             }
         }
         .onEscapeKey(isActive: browser.hasOverlay, perform: browser.dismissOverlays)
+        .sheet(isPresented: $browser.isImportingBrowserData) { ImportSheet() }
         .animation(.chrome, value: browser.showsAppCapsule)
         .environment(browser)
         .environment(\.isZen, browser.isZen)
@@ -60,7 +72,7 @@ struct MainWindowView: View {
         .tint(appearance.accent.color)
         .navigationTitle(browser.page?.displayTitle ?? browser.thread.title)
         .animation(.trail, value: browser.isZen)
-        .onAppear { if browser.trail.columns.isEmpty { browser.showPalette() } }
+        .onAppear { if browser.trail.columns.isEmpty, onboardingCompleted { browser.showPalette() } }
         // Dev-server scanning is app-wide; starting it again is harmless.
         .task { MomentWatcher.shared.start() }
         .task(id: developer.scansPorts) {

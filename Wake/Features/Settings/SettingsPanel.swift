@@ -35,6 +35,7 @@ struct SettingsPanel: View {
     @ViewBuilder private var content: some View {
         switch browser.settingsSection {
         case .general: GeneralSettingsSection()
+        case .search: SearchSettingsSection()
         case .appearance: AppearanceSettingsSection()
         case .deck: DeckSettingsSection()
         case .developer: DeveloperSettingsSection()

@@ -2,6 +2,7 @@ import SwiftUI
 import WebKit
 
 struct PrivacySettingsSection: View {
+    @Environment(BrowserModel.self) private var browser
     @State private var confirming: Action?
     @State private var done: Set<Action> = []
 
@@ -11,10 +12,27 @@ struct PrivacySettingsSection: View {
     }
 
     var body: some View {
+        VStack(alignment: .leading, spacing: 16) {
+            SettingsGroup(title: "Bring your data") {
+                SettingsRow(
+                    label: "Import from another browser",
+                    detail: "History, searches, cookies and site storage from Chrome, Arc, Dia, Brave, Edge, Firefox, Zen, Safari and more."
+                ) {
+                    Button("Import…") {
+                        browser.hideSettings()
+                        browser.isImportingBrowserData = true
+                    }
+                }
+            }
+            dataGroup
+        }
+    }
+
+    private var dataGroup: some View {
         SettingsGroup(title: "Your data") {
             SettingsRow(
                 label: "Clear browsing history",
-                detail: "Forgets visited pages shown under Recent in ⌘K. Threads and pinned apps stay."
+                detail: "Forgets visited pages and searches (History, and Recent in ⌘K). Threads and pinned apps stay."
             ) {
                 Button(done.contains(.history) ? "Cleared" : "Clear…") { confirming = .history }
                     .disabled(done.contains(.history))
@@ -42,7 +60,7 @@ struct PrivacySettingsSection: View {
     private func perform(_ action: Action) {
         switch action {
         case .history:
-            ThreadStore.shared.clearVisits()
+            HistoryStore.shared.clearAll()
             done.insert(.history)
         case .websiteData:
             WKWebsiteDataStore.default().removeData(ofTypes: WKWebsiteDataStore.allWebsiteDataTypes(), modifiedSince: .distantPast) {

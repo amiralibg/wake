@@ -22,12 +22,12 @@ struct AppCapsule: View {
                 }
                 .transition(.scale(scale: 0.6).combined(with: .opacity))
             }
-            if let page = pinnablePage, isHovering || browser.devServers.isEmpty {
+            if let page = pinnablePage, showsPinButton {
                 PinButton(host: page.host) { browser.pin(page) }
                     .transition(.scale(scale: 0.6).combined(with: .opacity))
             }
             if !browser.devServers.isEmpty {
-                if !browser.apps.apps.isEmpty || (pinnablePage != nil && isHovering) {
+                if !browser.apps.apps.isEmpty || showsPinButton {
                     Capsule()
                         .fill(.separator)
                         .frame(width: 20, height: 1)
@@ -37,9 +37,12 @@ struct AppCapsule: View {
                         .transition(.scale(scale: 0.6).combined(with: .opacity))
                 }
             }
-            Capsule()
-                .fill(.separator)
-                .frame(width: 20, height: 1)
+            // Only between groups: with nothing above, Moments stands alone.
+            if hasItemsAboveMoments {
+                Capsule()
+                    .fill(.separator)
+                    .frame(width: 20, height: 1)
+            }
             MomentsButton()
         }
         .padding(.vertical, 6)
@@ -49,6 +52,14 @@ struct AppCapsule: View {
         .onHover { inside in withAnimation(.chrome) { isHovering = inside } }
         .animation(.chrome, value: browser.apps.apps.map(\.id))
         .animation(.chrome, value: browser.devServers)
+    }
+
+    private var showsPinButton: Bool {
+        pinnablePage != nil && (isHovering || browser.devServers.isEmpty)
+    }
+
+    private var hasItemsAboveMoments: Bool {
+        !browser.apps.apps.isEmpty || showsPinButton || !browser.devServers.isEmpty
     }
 
     /// The focused web page, if it isn't an app already.

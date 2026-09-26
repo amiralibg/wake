@@ -2,6 +2,8 @@ import SwiftUI
 
 struct GeneralSettingsSection: View {
     @Environment(BrowsingSettings.self) private var browsing
+    @Environment(BrowserModel.self) private var browser
+    @AppStorage(OnboardingView.completedKey) private var onboardingCompleted = true
 
     var body: some View {
         @Bindable var browsing = browsing
@@ -33,43 +35,45 @@ struct GeneralSettingsSection: View {
                     .fixedSize()
                 }
             }
-            SearchKeyGroup()
+            UpdatesGroup()
+            SettingsGroup {
+                SettingsRow(label: "Welcome tour", detail: "The trail, your look, search and shortcuts, one screen each.") {
+                    Button("Show Welcome Tour") {
+                        browser.hideSettings()
+                        withAnimation(.easeInOut(duration: 0.45)) { onboardingCompleted = false }
+                    }
+                }
+            }
             ShortcutsGroup()
         }
     }
 }
 
-private struct SearchKeyGroup: View {
-    @State private var key = SearchKeyStore.braveAPIKey ?? ""
-    @State private var saved = false
+/// Wake's version and Sparkle's update settings.
+private struct UpdatesGroup: View {
+    @State private var updater = AppUpdater.shared
 
     var body: some View {
-        SettingsGroup(title: "Search") {
-            SettingsRow(
-                label: "Brave Search API key",
-                detail: "Shows real results inside ⌘K. Stored in your Keychain. Without a key, ⌘K shows suggestions and can open DuckDuckGo."
-            ) {
-                HStack(spacing: 8) {
-                    SecureField("Paste key", text: $key)
-                        .textFieldStyle(.roundedBorder)
-                        .frame(width: 200)
-                        .onSubmit(save)
-                    Button(saved ? "Saved" : "Save", action: save)
-                        .disabled(saved)
+        SettingsGroup(title: "Updates") {
+            SettingsRow(label: "Wake \(updater.version)", detail: detail) {
+                Button("Check Now") { updater.checkForUpdates() }
+                    .disabled(!updater.canCheckForUpdates)
+            }
+            if updater.isAvailable {
+                SettingsDivider()
+                SettingsRow(label: "Check automatically", detail: "Once a day. You choose when to install.") {
+                    Toggle("", isOn: $updater.automaticallyChecks)
+                        .toggleStyle(.switch)
+                        .labelsHidden()
                 }
             }
-            SettingsDivider()
-            SettingsRow(label: "Get a free key") {
-                Link("api-dashboard.search.brave.com", destination: URL(string: "https://api-dashboard.search.brave.com/")!)
-                    .font(.system(size: 12))
-            }
         }
-        .onChange(of: key) { saved = false }
     }
 
-    private func save() {
-        SearchKeyStore.braveAPIKey = key.trimmingCharacters(in: .whitespacesAndNewlines)
-        saved = true
+    private var detail: String {
+        guard updater.isAvailable else { return "Updates are off in this build: it has no update signing key." }
+        guard let last = updater.lastChecked else { return "New versions come from GitHub releases." }
+        return "Last checked \(last.formatted(.relative(presentation: .named)))."
     }
 }
 
@@ -91,8 +95,11 @@ private struct ShortcutsGroup: View {
         ("Back / forward in page", "⌥⌘[  ⌥⌘]"),
         ("Reload · without cache · stop", "⌘R  ⌥⌘R  ⌘."),
         ("Copy page address", "⇧⌘C"),
+        ("History · searches", "⌘Y  ⌥⌘Y"),
         ("New thread", "⇧⌘N"),
         ("DevTools · responsive preview", "⌥⌘I  ⌥⌘P"),
+        ("Web Inspector · inspect element", "⌥⇧⌘I  ⌥⇧⌘C"),
+        ("Console · page source · empty caches", "⌥⌘J  ⌥⌘U  ⌥⌘E"),
         ("Pin page as app", "⇧⌘P"),
         ("Show pinned app 1–9", "⌃1 … ⌃9"),
         ("Zen", "⌘\\"),

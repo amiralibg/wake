@@ -26,6 +26,9 @@ final class DeveloperSettings {
     var autoEnableForLocalhost: Bool { didSet { defaults.set(autoEnableForLocalhost, forKey: "developer.autoLocalhost") } }
     /// Watch the usual dev-server ports and list what's running in the app capsule.
     var scansPorts: Bool { didSet { defaults.set(scansPorts, forKey: "developer.scanPorts") } }
+    /// WebKit's Web Inspector, and "Inspect Element" in the page's context menu.
+    /// Applies to pages opened after the change.
+    var webInspectorEnabled: Bool { didSet { defaults.set(webInspectorEnabled, forKey: "developer.webInspector") } }
 
     @ObservationIgnored private let defaults: UserDefaults
 
@@ -34,5 +37,6 @@ final class DeveloperSettings {
         editor = CodeEditor(rawValue: defaults.string(forKey: "developer.editor") ?? "") ?? .cursor
         autoEnableForLocalhost = defaults.object(forKey: "developer.autoLocalhost") as? Bool ?? true
         scansPorts = defaults.object(forKey: "developer.scanPorts") as? Bool ?? true
+        webInspectorEnabled = defaults.object(forKey: "developer.webInspector") as? Bool ?? true
     }
 }

@@ -10,6 +10,9 @@ extension WKWebViewConfiguration {
         // WKWebView's default UA has no "Version/… Safari/…" suffix, and many sites
         // (Google, YouTube) then serve degraded pages. Present as the matching Safari.
         configuration.applicationNameForUserAgent = "Version/26.0 Safari/605.1.15"
+        if DeveloperSettings.shared.webInspectorEnabled {
+            WebInspector.enable(in: configuration.preferences)
+        }
         WebScripts.install(in: configuration.userContentController)
         return configuration
     }

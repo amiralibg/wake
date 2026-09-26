@@ -38,8 +38,12 @@ final class PaletteModel {
         }
 
         var sections: [PaletteSection] = []
-        if let url = URLInput.url(from: query) {
-            sections.append(PaletteSection(title: nil, items: [.open(url)]))
+        let address = URLInput.url(from: query)
+        if let address {
+            sections.append(PaletteSection(title: nil, items: [.open(address)]))
+        } else if results.isEmpty {
+            // ↩ on typed words searches, as in every browser's address bar.
+            sections.append(PaletteSection(title: nil, items: [.searchOnWeb(query)]))
         }
         if !matchingRecents.isEmpty {
             sections.append(PaletteSection(title: "Recent", items: matchingRecents))
@@ -50,7 +54,7 @@ final class PaletteModel {
         if !suggestions.isEmpty {
             sections.append(PaletteSection(title: "Refine", items: suggestions.prefix(4).map(PaletteItem.suggestion)))
         }
-        if results.isEmpty, !isSearching, URLInput.url(from: query) == nil {
+        if address != nil || !results.isEmpty {
             sections.append(PaletteSection(title: nil, items: [.searchOnWeb(query)]))
         }
         return sections
@@ -82,18 +86,23 @@ final class PaletteModel {
         searchTask?.cancel()
         selection = 0
         let query = trimmedQuery
-        guard !query.isEmpty, URLInput.url(from: query) == nil else {
+        let settings = BrowsingSettings.shared
+        guard !query.isEmpty, URLInput.url(from: query) == nil,
+              settings.showsSearchSuggestions || SearchKeyStore.hasBraveAPIKey else {
             results = []
             suggestions = []
             isSearching = false
             return
         }
         isSearching = true
+        let engine = settings.effectiveEngine
+        let wantsSuggestions = settings.showsSearchSuggestions
+        let key = SearchKeyStore.braveAPIKey
         searchTask = Task { [service] in
             try? await Task.sleep(for: .milliseconds(180))
             guard !Task.isCancelled else { return }
-            async let suggestions = service.suggestions(for: query)
-            async let results = service.results(for: query)
+            async let suggestions = wantsSuggestions ? service.suggestions(for: query, from: engine) : []
+            async let results = service.results(for: query, key: key)
             let fetched = ((try? await suggestions) ?? [], (try? await results) ?? [])
             guard !Task.isCancelled else { return }
             self.suggestions = fetched.0

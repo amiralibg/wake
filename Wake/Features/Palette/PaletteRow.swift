@@ -21,7 +21,7 @@ struct PaletteRow: View {
             }
             Spacer(minLength: 8)
             if isSelected {
-                KeyHint(item.isRefinement ? "tab" : "↩")
+                KeyHint(item.isRefinement && SearchKeyStore.hasBraveAPIKey ? "tab" : "↩")
             }
         }
         .padding(.horizontal, 12)
@@ -46,7 +46,8 @@ struct PaletteRow: View {
         case .suggestion:
             symbol("magnifyingglass")
         case .searchOnWeb:
-            symbol("globe")
+            let host = BrowsingSettings.shared.searchHost
+            Favicon(url: URL(string: "https://\(host)/favicon.ico"), host: host, size: 22)
         }
     }
 
@@ -62,7 +63,7 @@ struct PaletteRow: View {
         case .result(let result): result.title
         case .suggestion(let text): text
         case .recent(let page): page.title.isEmpty ? (page.url.host() ?? "") : page.title
-        case .searchOnWeb(let query): "Open results for “\(query)” on DuckDuckGo"
+        case .searchOnWeb(let query): "Search \(BrowsingSettings.shared.searchName) for “\(query)”"
         }
     }
 

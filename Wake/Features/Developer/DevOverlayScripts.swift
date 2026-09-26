@@ -12,7 +12,7 @@ enum DevOverlayScripts {
     (() => {
       if (window.__wakeInspect) return;
       const post = (m) => { try { window.webkit.messageHandlers.wakeDev.postMessage(m); } catch {} };
-      let box, label, active = false, current = null;
+      let box, label, active = false, current = null, priorCursor = null;
       const describe = (el) => {
         const key = Object.keys(el).find(k => k.startsWith('__reactFiber$') || k.startsWith('__reactInternalInstance$'));
         if (key) {
@@ -44,6 +44,8 @@ enum DevOverlayScripts {
           background: 'rgba(10,132,255,0.12)', borderRadius: '4px', transition: 'all 60ms ease-out' });
         Object.assign(label.style, { position: 'fixed', pointerEvents: 'none', zIndex: 2147483647, font: '600 11px -apple-system, system-ui',
           color: '#fff', background: '#0A84FF', padding: '3px 7px', borderRadius: '6px', whiteSpace: 'nowrap', boxShadow: '0 2px 8px rgba(0,0,0,.25)' });
+        // Tagged so the DevTools element tree leaves Wake's own overlay out.
+        box.dataset.wakeOverlay = ''; label.dataset.wakeOverlay = '';
         document.documentElement.append(box, label);
       };
       const move = (e) => {
@@ -70,15 +72,20 @@ enum DevOverlayScripts {
         document.addEventListener('mousemove', move, true);
         document.addEventListener('click', click, true);
         document.addEventListener('keydown', key, true);
-        document.documentElement.style.cursor = 'crosshair';
+        const root = document.documentElement;
+        priorCursor = root.hasAttribute('style') ? root.style.cursor : null;
+        root.style.cursor = 'crosshair';
       };
       const stop = () => {
         active = false;
         document.removeEventListener('mousemove', move, true);
         document.removeEventListener('click', click, true);
         document.removeEventListener('keydown', key, true);
-        if (box) { box.style.display = 'none'; label.style.display = 'none'; }
-        document.documentElement.style.cursor = '';
+        // Leave the page's DOM as it was: no overlay nodes, no empty style attribute.
+        if (box) { box.remove(); label.remove(); box = null; label = null; }
+        const root = document.documentElement;
+        if (priorCursor === null) { root.style.removeProperty('cursor'); if (!root.getAttribute('style')) root.removeAttribute('style'); }
+        else root.style.cursor = priorCursor;
       };
       window.__wakeInspect = { start, stop };
     })();

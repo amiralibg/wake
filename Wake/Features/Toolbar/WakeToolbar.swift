@@ -6,6 +6,10 @@ import SwiftUI
 struct WakeToolbar: View {
     @Environment(BrowserModel.self) private var browser
     var isFloating = false
+    @State private var width: CGFloat = 1200
+
+    /// Below this the full dev island and a usable address bar don't both fit.
+    private static let compactDevIslandWidth: CGFloat = 1080
 
     var body: some View {
         ToolbarLayout {
@@ -23,7 +27,7 @@ struct WakeToolbar: View {
             .modifier(IslandShadow(isOn: isFloating))
             HStack(spacing: 8) {
                 if let page = browser.webPage, page.isDeveloperMode {
-                    DevIsland(page: page)
+                    DevIsland(page: page, compact: width < Self.compactDevIslandWidth)
                         .modifier(IslandShadow(isOn: isFloating))
                         .transition(.scale(scale: 0.9, anchor: .trailing).combined(with: .opacity))
                 }
@@ -34,6 +38,7 @@ struct WakeToolbar: View {
         }
         .padding(.horizontal, Metrics.toolbarPadding)
         .frame(height: Metrics.toolbarHeight)
+        .onGeometryChange(for: CGFloat.self) { $0.size.width } action: { width = $0 }
         .background {
             if !isFloating { WindowDragArea() }
         }

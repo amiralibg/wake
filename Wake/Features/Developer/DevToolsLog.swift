@@ -25,6 +25,8 @@ struct SourceLocation: Hashable, Sendable {
 struct ConsoleEntry: Identifiable, Sendable {
     enum Level: String, Sendable {
         case log, info, debug, warn, error
+        /// Typed at the console prompt, and what it evaluated to.
+        case input, result
     }
 
     let id = UUID()
@@ -32,6 +34,8 @@ struct ConsoleEntry: Identifiable, Sendable {
     let message: String
     let stack: String?
     let date: Date
+    /// Identical messages in a row are shown once with a count, as in Safari.
+    var repeatCount = 1
 
     var source: SourceLocation? { stack.flatMap(SourceLocation.firstFrame(in:)) }
 
@@ -53,8 +57,12 @@ struct NetworkEntry: Identifiable, Sendable {
     var status: Int?
     var duration: TimeInterval?
     var responsePreview: String?
+    var responseHeaders: [String: String] = [:]
+    var responseSize: Int?
     var error: String?
     var isMocked = false
+    /// fetch or xhr.
+    var initiator = "fetch"
 
     var isFailure: Bool { error != nil || (status ?? 0) >= 400 }
     var pathAndQuery: String {
@@ -94,20 +102,51 @@ final class DevToolsLog {
     private(set) var lastHotUpdate: Date?
     /// Path → JSON body. Matching fetches are answered without touching the network.
     private(set) var mocks: [String: String] = [:]
+    /// Keep the console and network across navigations.
+    var preservesLog = false
+    /// When the current document started, to place requests on the waterfall.
+    private(set) var documentStart = Date.now
 
     private let consoleLimit = 500
     private let networkLimit = 300
 
-    var errorCount: Int { console.filter { $0.level == .error }.count }
+    private(set) var errorCount = 0
+    private(set) var warningCount = 0
 
-    func clearConsole() { console = [] }
+    func clearConsole() {
+        console = []
+        errorCount = 0
+        warningCount = 0
+    }
     func clearNetwork() { network = [] }
 
     /// A new document: its requests and messages start fresh. Mocks persist.
     func reset() {
-        console = []
-        network = []
+        documentStart = .now
         hmr = .none
+        guard !preservesLog else {
+            append(ConsoleEntry(level: .info, message: "Navigated to a new page", stack: nil, date: .now))
+            return
+        }
+        clearConsole()
+        network = []
+    }
+
+    /// Console lines Wake writes itself: prompt input, results, evaluation errors.
+    func addLocal(_ level: ConsoleEntry.Level, _ message: String) {
+        append(ConsoleEntry(level: level, message: message, stack: nil, date: .now))
+    }
+
+    private func append(_ entry: ConsoleEntry) {
+        if let last = console.last, last.level == entry.level, last.message == entry.message,
+           last.stack == entry.stack, entry.level != .input, entry.level != .result {
+            console[console.count - 1].repeatCount += 1
+        } else {
+            console.append(entry)
+            if console.count > consoleLimit { console.removeFirst(console.count - consoleLimit) }
+        }
+        if entry.level == .error { errorCount += 1 }
+        if entry.level == .warn { warningCount += 1 }
     }
 
     func setMock(_ body: String?, for path: String) {
@@ -119,6 +158,7 @@ final class DevToolsLog {
     func receive(_ message: [String: Any]) {
         switch message["type"] as? String {
         case "console": addConsole(message)
+        case "consoleClear": clearConsole()
         case "request": addRequest(message)
         case "response": completeRequest(message)
         case "hmr": updateHMR(message)
@@ -128,9 +168,15 @@ final class DevToolsLog {
 
     private func addConsole(_ message: [String: Any]) {
         let level = ConsoleEntry.Level(rawValue: message["level"] as? String ?? "log") ?? .log
-        let entry = ConsoleEntry(level: level, message: message["message"] as? String ?? "", stack: message["stack"] as? String, date: .now)
-        console.append(entry)
-        if console.count > consoleLimit { console.removeFirst(console.count - consoleLimit) }
+        append(ConsoleEntry(level: level, message: message["message"] as? String ?? "", stack: Self.pageFrames(message["stack"] as? String), date: .now))
+    }
+
+    /// Drops Wake's own frames (its console hook is a user script) from a stack, so
+    /// the first line is the page's code.
+    static func pageFrames(_ stack: String?) -> String? {
+        guard let stack else { return nil }
+        let frames = stack.split(separator: "\n").filter { !$0.contains("user-script:") }
+        return frames.isEmpty ? nil : frames.joined(separator: "\n")
     }
 
     private func addRequest(_ message: [String: Any]) {
@@ -142,7 +188,8 @@ final class DevToolsLog {
             url: url,
             requestHeaders: message["headers"] as? [String: String] ?? [:],
             requestBody: message["body"] as? String,
-            startedAt: .now
+            startedAt: .now,
+            initiator: message["initiator"] as? String ?? "fetch"
         )
         network.append(entry)
         if network.count > networkLimit { network.removeFirst(network.count - networkLimit) }
@@ -155,6 +202,8 @@ final class DevToolsLog {
         network[index].responsePreview = message["preview"] as? String
         network[index].error = message["error"] as? String
         network[index].isMocked = message["mocked"] as? Bool ?? false
+        network[index].responseHeaders = message["headers"] as? [String: String] ?? [:]
+        network[index].responseSize = message["size"] as? Int
     }
 
     private func updateHMR(_ message: [String: Any]) {

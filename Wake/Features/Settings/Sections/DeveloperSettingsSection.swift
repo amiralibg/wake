@@ -23,6 +23,10 @@ struct DeveloperSettingsSection: View {
                     .labelsHidden()
                     .fixedSize()
                 }
+                SettingsDivider()
+                SettingsRow(label: "Web Inspector", detail: "WebKit's full inspector (debugger, Timelines, Layers) from DevTools and ⌥⇧⌘I, and Inspect Element in page menus. Applies to pages opened afterwards.") {
+                    Toggle("", isOn: $developer.webInspectorEnabled).toggleStyle(.switch).labelsHidden()
+                }
             }
             ProjectsGroup(editing: $editing)
         }

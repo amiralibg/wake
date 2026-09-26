@@ -13,6 +13,11 @@ struct BrowserCommands: Commands {
     private var browser: BrowserModel? { focusedBrowser ?? BrowserModel.active }
 
     var body: some Commands {
+        CommandGroup(after: .appInfo) {
+            Button("Check for Updates…") { AppUpdater.shared.checkForUpdates() }
+                .disabled(!AppUpdater.shared.canCheckForUpdates)
+        }
+
         CommandGroup(replacing: .appSettings) {
             Button("Settings…") { browser?.showSettings() }
                 .keyboardShortcut(",", modifiers: .command)
@@ -29,6 +34,8 @@ struct BrowserCommands: Commands {
                 .keyboardShortcut("t", modifiers: [.command, .shift])
             Button("Duplicate Column") { browser?.trail.duplicateFocused() }
                 .keyboardShortcut("d", modifiers: [.command, .shift])
+            Divider()
+            Button("Import from Another Browser…") { browser?.isImportingBrowserData = true }
             Divider()
             // ⌘W closes the column (or overlay); ⇧⌘W the window, as in Safari. The
             // action looks the browser up when it runs, so it never goes stale.
@@ -122,6 +129,10 @@ struct BrowserCommands: Commands {
                 .keyboardShortcut("d", modifiers: .command)
             Button(browser?.isMomentsOpen == true ? "Hide Moments" : "Show Moments") { browser?.toggleMoments() }
                 .keyboardShortcut("b", modifiers: [.command, .option])
+            Button("Show History") { browser?.showHistory() }
+                .keyboardShortcut("y", modifiers: .command)
+            Button("Show Searches") { browser?.showHistory(.searches) }
+                .keyboardShortcut("y", modifiers: [.command, .option])
             Divider()
             ForEach(MomentShelf.smart, id: \.self) { shelf in
                 Button(shelf.title) { browser?.showMoments(shelf) }
@@ -138,6 +149,20 @@ struct BrowserCommands: Commands {
             Divider()
             Button("DevTools") { browser?.toggleDevTools() }
                 .keyboardShortcut("i", modifiers: [.command, .option])
+            Button("Web Inspector") { browser?.showWebInspector() }
+                .keyboardShortcut("i", modifiers: [.command, .option, .shift])
+            Button("Inspect Element") { browser?.inspectElement() }
+                .keyboardShortcut("c", modifiers: [.command, .option, .shift])
+            Button("JavaScript Console") { browser?.showDevTools(.console) }
+                .keyboardShortcut("j", modifiers: [.command, .option])
+            Button("Show Page Source") { browser?.showDevTools(.sources) }
+                .keyboardShortcut("u", modifiers: [.command, .option])
+            Button("Network") { browser?.showDevTools(.network) }
+            Button("Storage") { browser?.showDevTools(.storage) }
+            Button("Performance & Audit") { browser?.showDevTools(.performance) }
+            Divider()
+            Button("Empty Caches") { Task { await DevToolsSession.emptyCaches() } }
+                .keyboardShortcut("e", modifiers: [.command, .option])
             Button("Inspect Components") { browser?.toggleComponentInspector() }
                 .keyboardShortcut("c", modifiers: [.command, .option])
             Button("Responsive Preview") { browser?.openResponsivePreview(.defaultPhone) }

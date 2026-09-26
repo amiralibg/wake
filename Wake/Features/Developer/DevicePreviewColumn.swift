@@ -24,9 +24,13 @@ struct DevicePreviewColumn: View {
                     let radius = (device.preset.kind == .phone ? 38 : 20) * scale
                     PageWebView(page: page, cornerRadius: radius)
                         .frame(width: device.viewport.width * scale, height: device.viewport.height * scale)
-                        .background(Color(nsColor: .textBackgroundColor), in: .rect(cornerRadius: radius, style: .continuous))
+                        // Shadow from a shape, not the live page (see PageCard).
+                        .background {
+                            RoundedRectangle(cornerRadius: radius, style: .continuous)
+                                .fill(Color(nsColor: .textBackgroundColor))
+                                .shadow(color: .black.opacity(0.18), radius: 10, y: 4)
+                        }
                         .overlay(RoundedRectangle(cornerRadius: radius, style: .continuous).stroke(.primary.opacity(0.18), lineWidth: 1))
-                        .shadow(color: .black.opacity(0.18), radius: 10, y: 4)
                         .frame(width: proxy.size.width, height: proxy.size.height)
                         .onChange(of: scale, initial: true) { _, scale in page.setZoom(scale) }
                 }
@@ -34,7 +38,11 @@ struct DevicePreviewColumn: View {
             .background(Color(nsColor: .windowBackgroundColor), in: .rect(cornerRadius: appearance.cornerRadius, style: .continuous))
             .overlay(RoundedRectangle(cornerRadius: appearance.cornerRadius, style: .continuous).stroke(.primary.opacity(0.1), lineWidth: 0.5))
             .clipShape(.rect(cornerRadius: appearance.cornerRadius, style: .continuous))
-            .shadow(color: .black.opacity(0.14), radius: 12, y: 6)
+            .background {
+                RoundedRectangle(cornerRadius: appearance.cornerRadius, style: .continuous)
+                    .fill(Color(nsColor: .windowBackgroundColor))
+                    .shadow(color: .black.opacity(0.14), radius: 12, y: 6)
+            }
         }
     }
 }

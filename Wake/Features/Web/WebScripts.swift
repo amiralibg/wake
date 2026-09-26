@@ -13,7 +13,9 @@ enum WebScripts {
         controller.add(PageScriptBridge(), contentWorld: world, name: handlerName)
         // Developer-mode hooks run in the page world and report here. The handler is
         // always registered; the hooks themselves are only added in developer mode.
-        controller.add(PageScriptBridge(isDeveloper: true), contentWorld: .page, name: DevScripts.handlerName)
+        controller.add(PageScriptBridge(route: .developer), contentWorld: .page, name: DevScripts.handlerName)
+        // Wake's DevTools column (element picker) reports here.
+        controller.add(PageScriptBridge(route: .devTools), contentWorld: .page, name: DevToolsScripts.handlerName)
     }
 
     /// Link interception, the scroll probe, page state, scroll sync and live-chip
@@ -131,16 +133,22 @@ extension WebScripts {
 /// Routes script messages to the page that sent them. Stateless, so sharing one
 /// user-content controller between an opener and its popup is fine.
 private final class PageScriptBridge: NSObject, WKScriptMessageHandler {
-    let isDeveloper: Bool
+    enum Route { case page, developer, devTools }
 
-    init(isDeveloper: Bool = false) {
-        self.isDeveloper = isDeveloper
+    let route: Route
+
+    init(route: Route = .page) {
+        self.route = route
     }
 
     func userContentController(_ controller: WKUserContentController, didReceive message: WKScriptMessage) {
         MainActor.assumeIsolated {
             guard let page = message.webView?.navigationDelegate as? BrowserPage else { return }
-            isDeveloper ? page.receiveDeveloperMessage(message.body) : page.receive(message.body)
+            switch route {
+            case .page: page.receive(message.body)
+            case .developer: page.receiveDeveloperMessage(message.body)
+            case .devTools: page.receiveDevToolsMessage(message.body)
+            }
         }
     }
 }

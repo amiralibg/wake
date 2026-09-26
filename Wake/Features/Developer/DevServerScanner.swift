@@ -1,4 +1,4 @@
-import Foundation
+import AppKit
 import Observation
 
 /// A local dev server found on one of the usual ports.
@@ -56,7 +56,9 @@ final class DevServerScanner {
         task = Task { [weak self] in
             while !Task.isCancelled {
                 await self?.scan()
-                try? await Task.sleep(for: .seconds(5))
+                // Every 5 seconds while you're in Wake; in the background a server
+                // appearing can wait, and 24 probes every 5 seconds add up.
+                try? await Task.sleep(for: .seconds(NSApp.isActive ? 5 : 30))
             }
         }
     }

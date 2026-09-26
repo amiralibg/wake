@@ -33,11 +33,26 @@ enum KeychainStore {
     }
 }
 
+/// The Brave Search key, read from the Keychain once and then kept in memory: the
+/// palette asks for it on every keystroke, and a Keychain query costs a round trip
+/// to securityd.
+@MainActor
 enum SearchKeyStore {
     private static let account = "search.brave"
+    private static var cached: String??
 
     static var braveAPIKey: String? {
-        get { KeychainStore.string(for: account) }
-        set { KeychainStore.set(newValue, for: account) }
+        get {
+            if let cached { return cached }
+            let key = KeychainStore.string(for: account)
+            cached = .some(key)
+            return key
+        }
+        set {
+            KeychainStore.set(newValue, for: account)
+            cached = .some(newValue?.isEmpty == false ? newValue : nil)
+        }
     }
+
+    static var hasBraveAPIKey: Bool { braveAPIKey != nil }
 }
