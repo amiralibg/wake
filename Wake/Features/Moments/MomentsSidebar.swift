@@ -21,6 +21,10 @@ struct MomentsSidebar: View {
             }
             ShelfRow(shelf: .archived, title: MomentShelf.archived.title, count: all.filter(\.isArchived).count)
 
+            SectionLabel("History").padding(.top, 16)
+            ShelfRow(shelf: .history, title: MomentShelf.history.title, count: HistoryStore.shared.visitCount)
+            ShelfRow(shelf: .searches, title: MomentShelf.searches.title, count: HistoryStore.shared.searchCount)
+
             if !resolved.isEmpty {
                 SectionLabel("Resolved threads").padding(.top, 16)
                 ScrollView {

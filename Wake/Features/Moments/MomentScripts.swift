@@ -89,6 +89,7 @@ enum MomentScripts {
           if (!document.getElementById('__wake_moment_style')) {
             const style = document.createElement('style');
             style.id = '__wake_moment_style';
+            style.dataset.wakeOverlay = '';
             style.textContent = '::highlight(wake-moment) { background-color: rgba(255, 214, 10, 0.45); }';
             (document.head || document.documentElement).appendChild(style);
           }

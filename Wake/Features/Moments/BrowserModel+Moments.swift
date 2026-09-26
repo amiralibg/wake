@@ -5,6 +5,8 @@ import SwiftUI
 enum MomentShelf: Hashable {
     case everything, relevant, resurfacing, changed, fading, archived
     case resolvedThread(UUID)
+    /// Not moments: the library's History section.
+    case history, searches
 
     static let smart: [MomentShelf] = [.everything, .relevant, .resurfacing, .changed, .fading]
 
@@ -17,6 +19,8 @@ enum MomentShelf: Hashable {
         case .fading: "Fading"
         case .archived: "Archived"
         case .resolvedThread: "Resolved thread"
+        case .history: "History"
+        case .searches: "Searches"
         }
     }
 
@@ -29,6 +33,8 @@ enum MomentShelf: Hashable {
         case .fading: "hourglass"
         case .archived: "archivebox"
         case .resolvedThread: "checkmark.circle"
+        case .history: "clock.arrow.circlepath"
+        case .searches: "magnifyingglass"
         }
     }
 
@@ -41,9 +47,11 @@ enum MomentShelf: Hashable {
         case .changed: !moment.isArchived && moment.changedAt != nil
         case .fading: MomentRules.isFading(moment, now: now)
         case .archived: moment.isArchived
-        case .resolvedThread: false
+        case .resolvedThread, .history, .searches: false
         }
     }
+
+    var isHistory: Bool { self == .history || self == .searches }
 }
 
 enum MomentsLayout: Hashable { case grid, timeline }
@@ -98,6 +106,17 @@ extension BrowserModel {
         if let shelf { momentsShelf = shelf }
         MomentStore.shared.archiveStale()
         withAnimation(.chrome) { isMomentsOpen = true }
+    }
+
+    /// ⌘Y: the library, open on History.
+    func showHistory(_ shelf: MomentShelf = .history) {
+        if isMomentsOpen, momentsShelf == shelf { hideMoments() } else { showMoments(shelf) }
+    }
+
+    /// Opens a page from History as a new column.
+    func openFromLibrary(_ url: URL) {
+        withAnimation(.chrome) { isMomentsOpen = false }
+        trail.open(url)
     }
 
     func hideMoments() {

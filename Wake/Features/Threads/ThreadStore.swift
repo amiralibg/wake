@@ -17,7 +17,7 @@ final class ThreadStore {
     private var terminationObserver: NSObjectProtocol?
 
     private init() {
-        let models: [any PersistentModel.Type] = [ThreadRecord.self, ColumnRecord.self, VisitRecord.self, PinnedAppRecord.self, MomentRecord.self]
+        let models: [any PersistentModel.Type] = [ThreadRecord.self, ColumnRecord.self, VisitRecord.self, SearchRecord.self, PinnedAppRecord.self, MomentRecord.self]
         let schema = Schema(models)
         do {
             container = try ModelContainer(for: schema)
@@ -175,32 +175,5 @@ final class ThreadStore {
     func unpinApp(id: UUID) {
         pinnedApps().filter { $0.id == id }.forEach(context.delete)
         try? context.save()
-    }
-
-    // MARK: Visits
-
-    func recordVisit(url: URL, title: String) {
-        var descriptor = FetchDescriptor<VisitRecord>(predicate: #Predicate { $0.url == url })
-        descriptor.fetchLimit = 1
-        if let visit = try? context.fetch(descriptor).first {
-            visit.title = title.isEmpty ? visit.title : title
-            visit.visitedAt = .now
-            visit.visitCount += 1
-        } else {
-            context.insert(VisitRecord(url: url, title: title))
-        }
-        try? context.save()
-    }
-
-    /// Forgets every visited page (history), keeping threads and pins.
-    func clearVisits() {
-        try? context.delete(model: VisitRecord.self)
-        try? context.save()
-    }
-
-    func recentVisits(limit: Int = 50) -> [VisitRecord] {
-        var descriptor = FetchDescriptor<VisitRecord>(sortBy: [SortDescriptor(\.visitedAt, order: .reverse)])
-        descriptor.fetchLimit = limit
-        return (try? context.fetch(descriptor)) ?? []
     }
 }

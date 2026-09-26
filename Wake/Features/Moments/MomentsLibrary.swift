@@ -26,6 +26,9 @@ private struct LibraryWindow: View {
             Group {
                 if case .resolvedThread(let id) = browser.momentsShelf {
                     ResolvedThreadDetail(threadID: id)
+                } else if browser.momentsShelf.isHistory {
+                    HistoryContent(kind: browser.momentsShelf == .searches ? .searches : .pages)
+                        .id(browser.momentsShelf)
                 } else {
                     MomentsContent()
                 }
@@ -177,7 +180,7 @@ private struct EmptyShelf: View {
         case .changed: "No saved page has changed"
         case .fading: "Nothing is fading"
         case .archived: "The archive is empty"
-        case .resolvedThread: ""
+        case .resolvedThread, .history, .searches: ""
         }
     }
 
