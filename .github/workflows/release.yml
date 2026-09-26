@@ -52,6 +52,9 @@ jobs:
           fi
           echo "VERSION=$VERSION" >> "$GITHUB_ENV"
           echo "TAG=v$VERSION" >> "$GITHUB_ENV"
+          # Every 0.x release is a beta, and says so. It's still a normal (not "pre")
+          # release: the update feed is releases/latest, which skips pre-releases.
+          if [[ "$VERSION" == 0.* ]]; then echo "LABEL=$VERSION Beta" >> "$GITHUB_ENV"; else echo "LABEL=$VERSION" >> "$GITHUB_ENV"; fi
           # Sparkle compares build numbers: the commit count only ever grows.
           echo "BUILD=$(git rev-list --count HEAD)" >> "$GITHUB_ENV"
 
@@ -128,7 +131,9 @@ jobs:
         env:
           SPARKLE_PRIVATE_KEY: ${{ secrets.SPARKLE_PRIVATE_KEY }}
         run: |
-          SIGN_UPDATE=$(find build/DerivedData/SourcePackages/artifacts -name sign_update -type f | head -1)
+          # Exactly Sparkle's EdDSA tool: bin/old_dsa_scripts has a legacy one by the same name.
+          SIGN_UPDATE=$(find build/DerivedData/SourcePackages/artifacts -path "*/Sparkle/bin/sign_update" -type f | head -1)
+          if [ -z "$SIGN_UPDATE" ]; then echo "::error::Sparkle's sign_update wasn't found."; exit 1; fi
           printf '%s' "$SPARKLE_PRIVATE_KEY" > "$RUNNER_TEMP/sparkle.key"
           # Prints: sparkle:edSignature="…" length="…"
           echo "SPARKLE_ATTRIBUTES=$("$SIGN_UPDATE" --ed-key-file "$RUNNER_TEMP/sparkle.key" "dist/Wake-$VERSION.zip")" >> "$GITHUB_ENV"
@@ -140,7 +145,7 @@ jobs:
             gh release upload "$TAG" "dist/Wake-$VERSION.zip" "dist/Wake-$VERSION.dmg" --clobber
           else
             gh release create "$TAG" "dist/Wake-$VERSION.zip" "dist/Wake-$VERSION.dmg" \
-              --title "Wake $VERSION" --generate-notes --target "$GITHUB_SHA"
+              --title "Wake $LABEL" --generate-notes --target "$GITHUB_SHA"
           fi
 
       - name: Publish the appcast
@@ -157,7 +162,7 @@ jobs:
               <title>Wake</title>
               <link>https://github.com/$GITHUB_REPOSITORY</link>
               <item>
-                <title>Wake $VERSION</title>
+                <title>Wake $LABEL</title>
                 <pubDate>$PUB_DATE</pubDate>
                 <sparkle:version>$BUILD</sparkle:version>
                 <sparkle:shortVersionString>$VERSION</sparkle:shortVersionString>

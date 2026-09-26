@@ -36,6 +36,8 @@ The app icon (a page leaving a wake of itself) is drawn in code; to regenerate i
 
 ## Installing
 
+Wake is in **beta** (every 0.x release): expect rough edges, and please report what you find in [Issues](https://github.com/amiralibg/wake/issues).
+
 Download the latest `.dmg` from [Releases](https://github.com/amiralibg/wake/releases/latest). Wake checks for updates once a day (Wake ▸ Check for Updates… or Settings ▸ General) and installs them when you say so.
 
 Until releases are signed with a Developer ID, macOS asks before opening a downloaded copy the first time: open **System Settings ▸ Privacy & Security** and choose **Open Anyway**.

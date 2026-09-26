@@ -29,7 +29,9 @@ final class AppUpdater {
         let info = Bundle.main.infoDictionary
         let short = info?["CFBundleShortVersionString"] as? String ?? "?"
         let build = info?["CFBundleVersion"] as? String ?? "?"
-        return "\(short) (\(build))"
+        // Every 0.x release is a beta.
+        let beta = short.hasPrefix("0.") ? " Beta" : ""
+        return "\(short)\(beta) (\(build))"
     }
 
     var automaticallyChecks: Bool {
