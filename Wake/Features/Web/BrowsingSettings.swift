@@ -15,6 +15,10 @@ final class BrowsingSettings {
     /// On: the app capsule stays out of the way and slides in at the left edge,
     /// like it does in Zen. Off: it keeps a slim strip beside the pages.
     var capsuleHidesAtEdge: Bool { didSet { defaults.set(capsuleHidesAtEdge, forKey: "browsing.capsuleHides") } }
+    /// On: ⇧ and a mouse wheel step through the columns instead of scrolling the page sideways.
+    var shiftScrollMovesColumns: Bool { didSet { defaults.set(shiftScrollMovesColumns, forKey: "browsing.shiftScrollColumns") } }
+    /// On: ⌃W starts column mode (Vim's window prefix). Off for pages that need ⌃W themselves.
+    var columnModeKeyEnabled: Bool { didSet { defaults.set(columnModeKeyEnabled, forKey: "browsing.columnModeKey") } }
 
     /// Where typed searches go.
     var searchEngine: SearchEngine { didSet { defaults.set(searchEngine.rawValue, forKey: "search.engine") } }
@@ -29,6 +33,8 @@ final class BrowsingSettings {
         linksOpenInNewColumn = defaults.object(forKey: "browsing.linksInNewColumn") as? Bool ?? true
         restoresLastThread = defaults.object(forKey: "browsing.restoreThread") as? Bool ?? true
         capsuleHidesAtEdge = defaults.bool(forKey: "browsing.capsuleHides")
+        shiftScrollMovesColumns = defaults.object(forKey: "browsing.shiftScrollColumns") as? Bool ?? true
+        columnModeKeyEnabled = defaults.object(forKey: "browsing.columnModeKey") as? Bool ?? true
         searchEngine = SearchEngine(rawValue: defaults.string(forKey: "search.engine") ?? "") ?? .duckDuckGo
         customSearchTemplate = defaults.string(forKey: "search.customTemplate") ?? ""
         showsSearchSuggestions = defaults.object(forKey: "search.suggestions") as? Bool ?? true

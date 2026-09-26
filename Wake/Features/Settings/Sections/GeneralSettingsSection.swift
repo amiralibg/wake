@@ -25,6 +25,18 @@ struct GeneralSettingsSection: View {
                         .labelsHidden()
                 }
                 SettingsDivider()
+                SettingsRow(label: "⇧-scroll moves between columns", detail: "With a mouse wheel. Off, ⇧-scroll scrolls the page sideways.") {
+                    Toggle("", isOn: $browsing.shiftScrollMovesColumns)
+                        .toggleStyle(.switch)
+                        .labelsHidden()
+                }
+                SettingsDivider()
+                SettingsRow(label: "Column mode with ⌃W", detail: "Like Vim's window keys: ⌃W, then h and l to move, H and L to reorder, x to close. Turn off if a site needs ⌃W.") {
+                    Toggle("", isOn: $browsing.columnModeKeyEnabled)
+                        .toggleStyle(.switch)
+                        .labelsHidden()
+                }
+                SettingsDivider()
                 SettingsRow(label: "Apps and dev servers", detail: "The capsule on the left. Hidden, it slides in when the pointer reaches the window's left edge.") {
                     Picker("", selection: $browsing.capsuleHidesAtEdge) {
                         Text("Always shown").tag(false)
@@ -88,6 +100,9 @@ private struct ShortcutsGroup: View {
         ("Duplicate column", "⇧⌘D"),
         ("Previous / next column", "⌘[  ⌘]"),
         ("Cycle columns", "⌃⇥  ⌃⇧⇥"),
+        ("Previous / next column with a mouse", "⇧ scroll"),
+        ("Column mode, then focus · move · jump", "⌃W  h l  H L  1–9"),
+        ("In column mode: width · close · new · done", "< > =  x  n  esc"),
         ("Jump to column 1–8 · last", "⌘1 … ⌘8  ⌘9"),
         ("Move column left / right", "⌃⌘←  ⌃⌘→"),
         ("Wider / narrower column · default", "⌥⌘=  ⌥⌘−  ⌥⌘0"),

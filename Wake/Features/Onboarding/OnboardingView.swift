@@ -312,7 +312,7 @@ private struct TrailStep: View {
         StepLayout(
             eyebrow: "The trail",
             title: "Links open beside you.",
-            detail: "Click a link and it slides in as a new column. Go deeper and the trail scrolls; step back with ⌘[ and every page is still there."
+            detail: "Click a link and it slides in as a new column. Go deeper and the trail scrolls; step back with ⌘[ or ⇧-scroll and every page is still there."
         ) {
             VStack(spacing: 26) {
                 TrailDemo()

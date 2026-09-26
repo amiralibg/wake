@@ -12,7 +12,12 @@ import WebKit
 ///
 /// Limitation: pages that pan horizontally in their own JS wheel handlers (maps,
 /// canvas editors) without CSS overflow look "not scrollable" to the probe, so the
-/// trail takes those swipes. Plain mouse wheels always go to the page.
+/// trail takes those swipes.
+///
+/// Mouse wheels have no gestures: plain scrolling always goes to the page, and
+/// ⇧-scroll steps through the columns one notch at a time. That takes ⇧-scroll's
+/// usual horizontal scrolling away from pages (wide tables, code); Settings ▸ General
+/// turns it off.
 struct TrailGestureRouter: NSViewRepresentable {
     let trail: TrailModel
     let isEnabled: Bool
@@ -41,6 +46,9 @@ struct TrailGestureRouter: NSViewRepresentable {
         private var held: [NSEvent] = []
         private var travel = CGSize.zero
         private var samples: [(time: TimeInterval, dx: CGFloat)] = []
+        private var wheelTravel: CGFloat = 0
+        private var lastWheelTime: TimeInterval = 0
+        private var lastStepTime: TimeInterval = 0
 
         init(trail: TrailModel) {
             self.trail = trail
@@ -77,8 +85,8 @@ struct TrailGestureRouter: NSViewRepresentable {
                 return false
             }
 
-            // Mouse wheels have no phase: leave them to the page.
-            guard !event.phase.isEmpty else { return false }
+            // Mouse wheels have no phase.
+            guard !event.phase.isEmpty else { return routeWheel(event) }
 
             if event.phase.contains(.began) {
                 guard isEnabled, bounds.contains(convert(event.locationInWindow, from: nil)) else {
@@ -163,6 +171,45 @@ struct TrailGestureRouter: NSViewRepresentable {
             if isFinal(event) {
                 trail.endScroll(velocity: velocity)
             }
+        }
+
+        // MARK: Mouse wheel
+
+        /// ⇧-scroll over the trail moves between columns; anything else is the page's.
+        private func routeWheel(_ event: NSEvent) -> Bool {
+            guard isEnabled, BrowsingSettings.shared.shiftScrollMovesColumns,
+                  event.modifierFlags.contains(.shift),
+                  bounds.contains(convert(event.locationInWindow, from: nil)),
+                  !isOverOtherWebView(event)
+            else { return false }
+            stepTrail(with: event)
+            return true
+        }
+
+        /// A notch is one column, like pressing ⌘] or ⌘[.
+        private func stepTrail(with event: NSEvent) {
+            // ⇧ usually turns the wheel horizontal, but some mouse drivers leave it vertical.
+            let delta = event.scrollingDeltaX != 0 ? event.scrollingDeltaX : event.scrollingDeltaY
+            if event.timestamp - lastWheelTime > 0.3 { wheelTravel = 0 }
+            lastWheelTime = event.timestamp
+            wheelTravel += delta
+            // Notched wheels report lines; smooth-scrolling ones report points.
+            let notch: CGFloat = event.hasPreciseScrollingDeltas ? 30 : 1
+            // Free-spinning wheels send bursts; a steady pace keeps the trail from flying past.
+            guard abs(wheelTravel) >= notch, event.timestamp - lastStepTime > 0.09 else { return }
+            if wheelTravel < 0 { trail.focusNext() } else { trail.focusPrevious() }
+            wheelTravel = 0
+            lastStepTime = event.timestamp
+        }
+
+        /// A pinned app's page floats over the trail; its scrolling stays its own.
+        private func isOverOtherWebView(_ event: NSEvent) -> Bool {
+            guard let contentView = window?.contentView,
+                  let hit = contentView.hitTest(event.locationInWindow) else { return false }
+            var view: NSView? = hit
+            while let current = view, !(current is WKWebView) { view = current.superview }
+            guard let webView = view else { return false }
+            return !trail.columns.contains { $0.webView === webView }
         }
 
         private var velocity: CGFloat {

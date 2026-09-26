@@ -34,6 +34,7 @@ struct MainWindowView: View {
                 ZenChrome()
             }
             DeckLayer()
+            ColumnModeIsland()
             SaveMomentIsland()
             MomentsLibrary()
             PaletteOverlay()
@@ -64,6 +65,7 @@ struct MainWindowView: View {
             }
         }
         .onEscapeKey(isActive: browser.hasOverlay, perform: browser.dismissOverlays)
+        .columnModeKeys(browser)
         .sheet(isPresented: $browser.isImportingBrowserData) { ImportSheet() }
         .animation(.chrome, value: browser.showsAppCapsule)
         .environment(browser)

@@ -47,6 +47,9 @@ final class BrowserModel {
     var savedMoment: MomentRecord?
     /// The "Import from Another Browser" sheet.
     var isImportingBrowserData = false
+    /// After ⌃W, single keys move between columns (see `ColumnMode`).
+    var isColumnModeActive = false
+    @ObservationIgnored var columnModeTimeout: Task<Void, Never>?
 
     @ObservationIgnored private let store = ThreadStore.shared
     @ObservationIgnored private let thumbnails = ThumbnailStore.shared
