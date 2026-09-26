@@ -1,0 +1,25 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><title>Wake Test Page</title>
+<link rel="stylesheet" href="style.css">
+<style>
+  :root { --bg: #fbfbfd; --text: #1d1d1f; --muted: #6e6e73; --card: #ffffff; --line: #d2d2d7; --accent: #0071e3; }
+  @media (prefers-color-scheme: dark) {
+    :root { --bg: #111114; --text: #f5f5f7; --muted: #a1a1a6; --card: #1c1c20; --line: #2f2f35; --accent: #2997ff; }
+  }
+  body { background: var(--bg); color: var(--text); max-width: 760px; margin: 56px auto; padding: 0 24px; }
+  h1 { font: italic bold 44px/1.1 Georgia, serif; margin: 0 0 8px; }
+  a { color: var(--accent); }
+  .intro { color: var(--muted); font-size: 17px; }
+  .card { padding: 16px 20px; border: 1px solid var(--line); border-radius: 14px; margin: 10px 0; background: var(--card); font-size: 15px; }
+  button { font: 600 14px -apple-system, sans-serif; color: #fff; background: var(--accent); border: 0; border-radius: 980px; padding: 9px 18px; }
+</style></head>
+<body>
+  <h1 id="title" class="headline main">Wake Test Page</h1>
+  <p class="intro">A page to exercise DevTools. <a href="#one">Link one</a></p>
+  <div class="card" data-kind="alpha"><span>Alpha card</span></div>
+  <div class="card" data-kind="beta"><span>Beta card</span></div>
+  <div class="card" data-kind="gamma"><span>Gamma card</span></div>
+  <ul id="list"><li>one</li><li>two</li><li>three</li></ul>
+  <button id="go" onclick="doFetch()">Fetch data</button>
+  <script src="app.js"></script>
+</body></html>
