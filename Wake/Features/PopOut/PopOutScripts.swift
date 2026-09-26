@@ -28,7 +28,7 @@ enum PopOutScripts {
           const nameOf = (el) => {
             const text = el.getAttribute('aria-label') || (el.tagName === 'IMG' ? el.getAttribute('alt') : '')
               || ((el.querySelector('h1, h2, h3, h4, caption, figcaption') || {}).innerText || '');
-            return text.trim().split('\n')[0].slice(0, 60);
+            return text.trim().split('\\n')[0].slice(0, 60);
           };
           const describe = (el) => {
             const aria = el.getAttribute('aria-label');

@@ -51,6 +51,8 @@ private struct PopOutHeader: View {
                     .foregroundStyle(.secondary)
                     .lineLimit(1)
             }
+            // Clicks on the title fall through to the drag area behind it.
+            .allowsHitTesting(false)
             Spacer(minLength: 4)
             HeaderButton(symbol: popOut.isPinned ? "pin.fill" : "pin", label: popOut.isPinned ? "Unpin: stay on this Space" : "Pin: show on every Space and over full-screen apps") {
                 popOut.isPinned.toggle()
@@ -59,6 +61,9 @@ private struct PopOutHeader: View {
         }
         .padding(.leading, 11)
         .padding(.trailing, 6)
+        // The header is the panel's handle: the web view below takes its own clicks,
+        // and a borderless panel's SwiftUI content never moves it by itself.
+        .background(WindowDragArea(zoomsOnDoubleClick: false))
         .help(popOut.pick.url.absoluteString)
     }
 }
