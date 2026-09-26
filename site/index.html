@@ -1,0 +1,377 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <title>Wake, the browser for a new age</title>
+  <meta name="description" content="Wake is a native Mac browser where every link opens as a column beside the page you came from. Free, open source, no Chromium, no Electron.">
+  <meta name="theme-color" content="#0c0c0d">
+  <meta property="og:title" content="Wake, the browser for a new age">
+  <meta property="og:description" content="A native Mac browser where pages are columns in a trail, not tabs in a bar.">
+  <meta property="og:image" content="assets/icon.png">
+  <meta name="twitter:card" content="summary">
+  <meta name="twitter:creator" content="@_amiralibgi">
+  <link rel="icon" href="assets/favicon.png">
+  <link rel="apple-touch-icon" href="assets/icon.png">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600&family=Geist+Mono:wght@400;500&family=Instrument+Serif:ital@0;1&display=swap">
+  <link rel="stylesheet" href="assets/style.css">
+  <script>document.documentElement.classList.add('js')</script>
+  <script type="module" src="assets/site.js"></script>
+</head>
+<body>
+  <a class="skip" href="#main">Skip to content</a>
+
+  <header class="nav" data-state="water">
+    <div class="nav-inner">
+      <a class="brand" href="./" aria-label="Wake home">
+        <img src="assets/icon.png" alt="" width="26" height="26">
+        Wake
+        <span class="beta">Beta</span>
+      </a>
+      <nav class="nav-links" aria-label="Main">
+        <a class="hide-sm" href="#features">Features</a>
+        <a href="about.html">About</a>
+        <a class="hide-sm" href="https://github.com/amiralibg/wake">GitHub</a>
+        <a class="btn btn-small" href="#download"><span>Download</span></a>
+      </nav>
+    </div>
+  </header>
+
+  <main id="main">
+    <!-- Hero: the onboarding water, live. -->
+    <section class="water hero on-water" data-water="scroll" data-bow-y="0.84" aria-labelledby="hero-title">
+      <canvas aria-hidden="true"></canvas>
+      <div class="hero-body wrap">
+        <p class="label" data-reveal>Wake <span data-version>0.1.0</span> beta · for macOS</p>
+        <h1 id="hero-title" class="display" data-split>The browser for a <em>new age.</em></h1>
+        <p class="lead" data-reveal style="--i: 4">Every link opens as a column beside the page you came from, so the path you took stays on screen. Native to the Mac. No Chromium, no Electron.</p>
+        <div class="hero-actions" data-reveal style="--i: 6">
+          <a class="btn btn-primary btn-large" data-dmg href="https://github.com/amiralibg/wake/releases/download/v0.1.0/Wake-0.1.0.dmg">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 4v11M7 10.5 12 15.5l5-5M5 20h14"/></svg>
+            Download for Mac
+          </a>
+          <a class="btn btn-ghost btn-large" href="about.html">Why Wake exists <span class="arrow" aria-hidden="true">→</span></a>
+        </div>
+        <p class="hero-meta muted" data-reveal style="--i: 7">macOS 14 or later · free and open source</p>
+      </div>
+      <p class="hero-hint label" aria-hidden="true"><span>Move across the water · click to drop a stone</span></p>
+    </section>
+
+    <!-- The trail, stepped through by scrolling. -->
+    <section class="trail" aria-labelledby="trail-title">
+      <div class="trail-stage">
+        <div class="wrap trail-grid">
+          <div class="trail-copy">
+            <p class="label">The trail</p>
+            <h2 id="trail-title" class="h2" style="margin-top: 16px">Tabs hid where you've been. The trail <em>shows</em> it.</h2>
+            <ol class="steps">
+              <li><strong>One page fills the window</strong><span>Start anywhere. A single column takes the whole window.</span></li>
+              <li><strong>Links open to the right</strong><span>Click a link and the page lands beside the one you came from.</span></li>
+              <li><strong>Two share, more scroll</strong><span>Two columns split the window. Open a third and the trail slides along.</span></li>
+              <li><strong>Keep going</strong><span>Every hop adds a column. Nothing closes behind you.</span></li>
+              <li><strong>Resize one column</strong><span>Drag its edge. Its neighbours keep their size.</span></li>
+              <li><strong>Scroll back</strong><span>Your path is still there, in the order you took it.</span></li>
+            </ol>
+          </div>
+
+          <div class="window" role="img" aria-label="A Wake window. Pages open as columns side by side, left to right, as links are followed.">
+            <div class="lights" aria-hidden="true"><i></i><i></i><i></i></div>
+            <div class="window-bar" aria-hidden="true"><i></i><span data-url>duckduckgo.com</span></div>
+            <div class="cols" aria-hidden="true">
+              <article class="col" data-host="duckduckgo.com">
+                <p class="host">duckduckgo.com</p>
+                <h4>paper boat</h4>
+                <div class="res"><b></b><div class="ln m"></div><div class="ln s"></div></div>
+                <span class="lnk">Paper boat · Wikipedia</span>
+                <div class="res"><b></b><div class="ln m"></div><div class="ln s"></div></div>
+                <div class="res"><b></b><div class="ln m"></div><div class="ln s"></div></div>
+                <div class="res"><b></b><div class="ln m"></div></div>
+                <span class="grip"></span>
+              </article>
+              <article class="col is-hidden" data-host="en.wikipedia.org">
+                <p class="host">en.wikipedia.org</p>
+                <h4>Paper boat</h4>
+                <div class="ln"></div><div class="ln m"></div><div class="ln"></div><div class="ln s"></div>
+                <div class="gap"></div>
+                <span class="lnk">Kelvin wake pattern</span>
+                <div class="ln"></div><div class="ln m"></div><div class="ln"></div><div class="ln"></div><div class="ln s"></div>
+                <span class="grip"></span>
+              </article>
+              <article class="col is-hidden" data-host="en.wikipedia.org">
+                <p class="host">en.wikipedia.org</p>
+                <h4>Kelvin wake</h4>
+                <svg class="fig" viewBox="0 0 200 64" width="200" height="64" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round">
+                  <path d="M190 32 L20 4 M190 32 L20 60" stroke-dasharray="3 5"/>
+                  <path d="M150 26c4 3 4 9 0 12M120 21c7 5 7 17 0 22M90 16c10 7 10 25 0 32M60 11c13 9 13 33 0 42" opacity=".6"/>
+                  <path d="M186 28l8 4-8 4z" fill="currentColor" stroke="none"/>
+                </svg>
+                <div class="ln"></div><div class="ln m"></div><div class="ln s"></div>
+                <span class="lnk">Watch: wakes in slow motion</span>
+                <div class="ln"></div><div class="ln m"></div><div class="ln"></div>
+                <span class="grip"></span>
+              </article>
+              <article class="col is-hidden" data-host="youtube.com">
+                <p class="host">youtube.com</p>
+                <h4>How a wake forms</h4>
+                <div class="vid"></div>
+                <div class="ln m"></div><div class="ln s"></div>
+                <div class="gap"></div>
+                <div class="ln"></div><div class="ln"></div><div class="ln m"></div>
+                <span class="grip"></span>
+              </article>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Features -->
+    <section id="features" class="section" aria-labelledby="features-title">
+      <div class="wrap">
+        <div class="section-head">
+          <p class="label" data-reveal>And the rest</p>
+          <h2 id="features-title" class="h2" data-split>Less hunting. More <em>reading.</em></h2>
+          <p class="lead" data-reveal style="--i: 3">Wake remembers where you were, tells you what changed, and keeps its own chrome off the page.</p>
+        </div>
+
+        <div class="bento">
+          <article class="card wide" data-reveal>
+            <div class="card-art" aria-hidden="true">
+              <div class="art deck">
+                <div class="dc"><b></b><i>CI failed</i><u></u></div>
+                <div class="dc"><b></b><i>3 unread</i><u></u></div>
+                <div class="dc"><b></b><i>−12% price</i><u></u></div>
+              </div>
+            </div>
+            <div class="card-copy">
+              <h3 class="h3">The Deck <kbd>⌘K</kbd></h3>
+              <p>Every thread as a live card. The ones you use float up and the rest sink. Each card shows one live chip: a failing CI run, a price drop, an unread count.</p>
+            </div>
+          </article>
+
+          <article class="card wide" data-reveal style="--i: 1">
+            <div class="card-art" aria-hidden="true">
+              <div class="art moment">
+                <span class="pin"></span>
+                <div class="ln"></div><div class="ln" style="width: 88%"></div>
+                <div class="sel"></div>
+                <div class="ln" style="width: 94%"></div><div class="ln" style="width: 60%"></div>
+                <p class="note">for Monday's review</p>
+              </div>
+            </div>
+            <div class="card-copy">
+              <h3 class="h3">Moments <kbd>⌘D</kbd></h3>
+              <p>Saves your scroll position, your selection and why you saved it. Opening one scrolls back and highlights the passage again. Moments you never open fade and archive themselves.</p>
+            </div>
+          </article>
+
+          <article class="card" data-reveal>
+            <div class="card-art" aria-hidden="true">
+              <div class="art popout">
+                <div class="page"><div class="ln"></div><div class="ln" style="width: 70%"></div></div>
+                <div class="region"></div>
+                <div class="panel">live · 02:14</div>
+              </div>
+            </div>
+            <div class="card-copy">
+              <h3 class="h3">Pop Out</h3>
+              <p>Pick any part of a page and float it, live, in a small panel that stays on top.</p>
+            </div>
+          </article>
+
+          <article class="card" data-reveal style="--i: 1">
+            <div class="card-art" aria-hidden="true">
+              <div class="net">
+                <div class="row"><span>localhost</span><div class="bar"><i style="--x: 0%; --w: 18%; --d: 0ms"></i></div></div>
+                <div class="row"><span>app.js</span><div class="bar"><i style="--x: 16%; --w: 34%; --d: 180ms"></i></div></div>
+                <div class="row"><span>style.css</span><div class="bar"><i style="--x: 17%; --w: 14%; --d: 240ms"></i></div></div>
+                <div class="row"><span>api/user</span><div class="bar"><i class="slow" style="--x: 50%; --w: 38%; --d: 520ms"></i></div></div>
+                <div class="row"><span>geist.woff2</span><div class="bar"><i style="--x: 32%; --w: 12%; --d: 360ms"></i></div></div>
+                <div class="row"><span>hero.avif</span><div class="bar"><i style="--x: 34%; --w: 26%; --d: 420ms"></i></div></div>
+              </div>
+            </div>
+            <div class="card-copy">
+              <h3 class="h3">Developer mode</h3>
+              <p>Turns on for localhost. Elements, Console, Network, Storage and Performance live in a column, and Safari's Web Inspector is one click away.</p>
+            </div>
+          </article>
+
+          <article class="card" data-reveal style="--i: 2">
+            <div class="card-art" aria-hidden="true">
+              <div class="art glass">
+                <div class="content">
+                  <div class="blk"></div><div class="blk"></div><div class="blk"></div><div class="blk"></div><div class="blk"></div><div class="blk"></div>
+                </div>
+                <div class="island"></div>
+              </div>
+            </div>
+            <div class="card-copy">
+              <h3 class="h3">Liquid Glass</h3>
+              <p>On macOS 26 the toolbar floats as glass islands and shows up only when you reach for it. Zen hides it altogether.</p>
+            </div>
+          </article>
+
+          <article class="card" data-reveal>
+            <div class="card-art" aria-hidden="true">
+              <div class="import">
+                <div class="slot">
+                  <div class="reel">
+                    <span>Chrome</span><span>Arc</span><span>Safari</span><span>Firefox</span><span>Brave</span><span>Zen</span><span>Edge</span><span>Dia</span><span>Chrome</span>
+                  </div>
+                </div>
+                <span class="into">into</span>
+                <img src="assets/icon.png" alt="" width="44" height="44">
+              </div>
+            </div>
+            <div class="card-copy">
+              <h3 class="h3">Bring your data</h3>
+              <p>History, searches, cookies and site storage from Chrome, Arc, Safari, Firefox and seven more. You stay signed in.</p>
+            </div>
+          </article>
+
+          <article class="card" data-reveal style="--i: 1">
+            <div class="card-art" aria-hidden="true">
+              <div class="net" style="font-size: 12px; gap: 10px">
+                <div class="row" style="grid-template-columns: 1fr"><span class="label">Today</span></div>
+                <div class="row"><span>14:02</span><div class="bar"><i style="--x: 0%; --w: 72%; --d: 0ms"></i></div></div>
+                <div class="row"><span>13:40</span><div class="bar"><i style="--x: 0%; --w: 54%; --d: 120ms"></i></div></div>
+                <div class="row"><span>11:15</span><div class="bar"><i style="--x: 0%; --w: 80%; --d: 240ms"></i></div></div>
+                <div class="row" style="grid-template-columns: 1fr"><span class="label">Yesterday</span></div>
+                <div class="row"><span>22:48</span><div class="bar"><i style="--x: 0%; --w: 46%; --d: 420ms"></i></div></div>
+              </div>
+            </div>
+            <div class="card-copy">
+              <h3 class="h3">History and searches <kbd>⌘Y</kbd></h3>
+              <p>Every page you visited, grouped by day, and a separate list of everything you searched for. DuckDuckGo by default, or pick from ten engines.</p>
+            </div>
+          </article>
+          <article class="card" data-reveal style="--i: 2">
+            <div class="card-art" aria-hidden="true">
+              <div class="art apps" style="width: auto; height: auto">
+                <span>M</span>
+                <span>C<b style="--d: 0ms">3</b></span>
+                <span>L</span>
+                <span>F<b style="--d: 900ms">12</b></span>
+              </div>
+            </div>
+            <div class="card-copy">
+              <h3 class="h3">Apps</h3>
+              <p>Pin the web apps you live in to a slim glass capsule. Each stays loaded, and its unread count shows as a badge.</p>
+            </div>
+          </article>
+        </div>
+
+        <p class="also" data-reveal>Also in the box: device previews at real iPhone and iPad sizes, open-in-editor through source maps, and a first-launch tour over live water.</p>
+      </div>
+    </section>
+
+    <!-- Download and install -->
+    <section id="download" class="section" aria-labelledby="download-title" style="border-top: 1px solid var(--line)">
+      <div class="wrap install">
+        <div class="install-head">
+          <svg class="mark mark-lg" viewBox="80 80 864 864" role="img" aria-label="The Wake icon: a page leaving a wake of slimmer copies of itself">
+            <defs>
+              <linearGradient id="icon-ground" x1="0" y1="0" x2="0" y2="1">
+                <stop offset="0" stop-color="#3d5bff"/>
+                <stop offset="1" stop-color="#1f32d6"/>
+              </linearGradient>
+            </defs>
+            <rect x="100" y="100" width="824" height="824" rx="186" fill="url(#icon-ground)"/>
+            <g fill="#fff">
+              <rect class="slice" style="--o: .18" x="283" y="288" width="18" height="448" rx="9"/>
+              <rect class="slice" style="--o: .34" x="325" y="288" width="40" height="448" rx="20"/>
+              <rect class="slice" style="--o: .58" x="389" y="288" width="72" height="448" rx="36"/>
+              <rect class="slice" style="--o: 1" x="485" y="288" width="256" height="448" rx="58"/>
+            </g>
+          </svg>
+          <p class="label">Download</p>
+          <h2 id="download-title" class="h2" data-split>Step into the <em>new age.</em></h2>
+          <p class="lead" data-reveal>Free, open source, and made for the Mac.</p>
+
+          <div class="install-actions" data-reveal style="--i: 1">
+            <a class="btn btn-primary btn-large" data-dmg href="https://github.com/amiralibg/wake/releases/download/v0.1.0/Wake-0.1.0.dmg">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 4v11M7 10.5 12 15.5l5-5M5 20h14"/></svg>
+              Download Wake
+            </a>
+            <a class="textlink" href="https://github.com/amiralibg/wake/releases/latest">Release notes</a>
+          </div>
+
+          <dl class="release" data-reveal style="--i: 2">
+            <dt>Version</dt><dd><span data-version>0.1.0</span> beta</dd>
+            <dt>Released</dt><dd data-date>September 26, 2026</dd>
+            <dt>Disk image</dt><dd data-size>4.4 MB</dd>
+            <dt>Requires</dt><dd>macOS 14 Sonoma or later</dd>
+            <dt>License</dt><dd>MIT</dd>
+          </dl>
+        </div>
+
+        <ol class="howto">
+          <li data-reveal>
+            <div>
+              <h3>Download the disk image</h3>
+              <p>Open <code>Wake.dmg</code> and drag Wake into Applications.</p>
+            </div>
+          </li>
+          <li data-reveal style="--i: 1">
+            <div>
+              <h3>Clear the quarantine flag, once</h3>
+              <p>Wake isn't signed with an Apple Developer ID yet, so macOS blocks a downloaded copy with "can't be opened" or "is damaged". This command removes the flag macOS puts on downloaded files.</p>
+              <div class="code">
+                <code>xattr -cr /Applications/Wake.app</code>
+                <button class="copy" type="button" data-copy="xattr -cr /Applications/Wake.app" aria-label="Copy command" aria-describedby="copy-status">
+                  <span class="idle">Copy</span><span class="done" aria-hidden="true">Copied</span>
+                </button>
+              </div>
+              <p class="muted" style="font-size: var(--t-small)">Rather not use Terminal? Try to open Wake, then choose Open Anyway in System Settings › Privacy &amp; Security.</p>
+              <span id="copy-status" role="status" class="sr-only"></span>
+            </div>
+          </li>
+          <li data-reveal style="--i: 2">
+            <div>
+              <h3>Import from your old browser</h3>
+              <p>The welcome tour sets your look and search engine. Then File › Import from Another Browser brings over history, cookies and site storage.</p>
+            </div>
+          </li>
+          <li data-reveal style="--i: 3">
+            <div>
+              <h3>Updates arrive on their own</h3>
+              <p>Wake checks once a day and installs a new version when you say so. You can also check from Wake › Check for Updates.</p>
+            </div>
+          </li>
+        </ol>
+      </div>
+    </section>
+
+    <!-- Closing band -->
+    <section class="water band on-water" data-water="still" data-bow-y="0.8" aria-labelledby="band-title">
+      <canvas aria-hidden="true"></canvas>
+      <div class="wrap">
+        <p class="label">Open source · MIT</p>
+        <h2 id="band-title" class="h2" data-split>Open a link. Leave a <em>wake.</em></h2>
+        <a class="btn btn-ghost btn-large" href="https://github.com/amiralibg/wake">
+          <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M12 2a10 10 0 0 0-3.16 19.49c.5.09.68-.22.68-.48v-1.7c-2.78.6-3.37-1.34-3.37-1.34-.45-1.16-1.11-1.47-1.11-1.47-.91-.62.07-.61.07-.61 1 .07 1.53 1.03 1.53 1.03.9 1.52 2.34 1.08 2.91.83.09-.65.35-1.08.63-1.33-2.22-.25-4.55-1.11-4.55-4.94 0-1.09.39-1.98 1.03-2.68-.1-.25-.45-1.27.1-2.64 0 0 .84-.27 2.75 1.02a9.56 9.56 0 0 1 5 0c1.91-1.3 2.75-1.02 2.75-1.02.55 1.37.2 2.39.1 2.64.64.7 1.03 1.59 1.03 2.68 0 3.84-2.34 4.68-4.57 4.93.36.31.68.92.68 1.85v2.74c0 .27.18.58.69.48A10 10 0 0 0 12 2Z"/></svg>
+          Star it on GitHub
+        </a>
+      </div>
+    </section>
+  </main>
+
+  <footer class="footer">
+    <div class="wrap">
+      <a class="byline" href="https://x.com/_amiralibgi">
+        <img src="assets/amiralibgi.png" alt="" width="40" height="40">
+        <span><small>Built by</small><strong>amiralibgi</strong></span>
+      </a>
+      <nav aria-label="Footer">
+        <a href="about.html">About</a>
+        <a href="https://github.com/amiralibg/wake">GitHub repo</a>
+        <a href="https://github.com/amiralibg/wake/releases">Releases</a>
+        <a href="https://github.com/amiralibg/wake/issues">Report an issue</a>
+        <a href="https://x.com/_amiralibgi">@_amiralibgi on X</a>
+      </nav>
+    </div>
+  </footer>
+</body>
+</html>

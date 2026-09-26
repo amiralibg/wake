@@ -1,0 +1,16 @@
+# Dokploy: create a Compose service with Compose Path "./site/docker-compose.yml",
+# then add your domain on service "wake-site", container port 80. Traefik handles TLS.
+# (Or create an Application: Build Type "Dockerfile", Docker Context Path "site".)
+#
+# Locally: docker build -t wake-site . && docker run --rm -p 8080:80 wake-site
+services:
+  wake-site:
+    build: .
+    restart: always
+    expose:
+      - "80"
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "3"

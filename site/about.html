@@ -1,0 +1,218 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <title>About Wake, a new age of browsers</title>
+  <meta name="description" content="Why Wake exists: tab bars have looked the same for twenty years. Wake opens every page beside the one you came from, as a native Mac app.">
+  <meta name="theme-color" content="#f5f3ef">
+  <meta property="og:title" content="About Wake, a new age of browsers">
+  <meta property="og:description" content="Tab bars have looked the same for twenty years. The web hasn't.">
+  <meta property="og:image" content="assets/icon.png">
+  <meta name="twitter:card" content="summary">
+  <meta name="twitter:creator" content="@_amiralibgi">
+  <link rel="icon" href="assets/favicon.png">
+  <link rel="apple-touch-icon" href="assets/icon.png">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600&family=Geist+Mono:wght@400;500&family=Instrument+Serif:ital@0;1&display=swap">
+  <link rel="stylesheet" href="assets/style.css">
+  <script>document.documentElement.classList.add('js')</script>
+  <script type="module" src="assets/site.js"></script>
+</head>
+<body>
+  <a class="skip" href="#main">Skip to content</a>
+
+  <header class="nav" data-state="paper">
+    <div class="nav-inner">
+      <a class="brand" href="./" aria-label="Wake home">
+        <img src="assets/icon.png" alt="" width="26" height="26">
+        Wake
+        <span class="beta">Beta</span>
+      </a>
+      <nav class="nav-links" aria-label="Main">
+        <a class="hide-sm" href="./#features">Features</a>
+        <a href="about.html" aria-current="page">About</a>
+        <a class="hide-sm" href="https://github.com/amiralibg/wake">GitHub</a>
+        <a class="btn btn-small" href="./#download"><span>Download</span></a>
+      </nav>
+    </div>
+  </header>
+
+  <main id="main">
+    <section class="about-hero" aria-labelledby="about-title">
+      <svg class="about-hero-art" viewBox="0 0 540 480" aria-hidden="true">
+        <g fill="currentColor">
+          <rect x="40" y="16" width="18" height="448" rx="9" opacity=".06" style="--d: 700ms; --drift: -18%"/>
+          <rect x="82" y="16" width="40" height="448" rx="20" opacity=".09" style="--d: 520ms; --drift: -9%"/>
+          <rect x="146" y="16" width="72" height="448" rx="36" opacity=".13" style="--d: 340ms; --drift: -4%"/>
+        </g>
+        <rect x="242.75" y="16.75" width="254.5" height="446.5" rx="57" fill="none" stroke="currentColor" stroke-opacity=".22" stroke-width="1.5" style="--d: 120ms; --drift: 0%"/>
+      </svg>
+      <div class="wrap">
+        <p class="label" data-reveal>About Wake</p>
+        <h1 id="about-title" class="display" data-split>A new age <em>of browsers.</em></h1>
+        <p class="lead" data-reveal style="--i: 5">Tab bars have looked the same for twenty years. The web hasn't. Wake starts from one idea: the page you open should sit next to the page you came from.</p>
+      </div>
+    </section>
+
+    <!-- Tabs turn into a trail as you scroll. -->
+    <section class="morph" aria-labelledby="morph-title">
+      <div class="morph-stage wrap">
+        <h2 id="morph-title" class="sr-only">From tabs to a trail</h2>
+        <div class="morph-head" aria-hidden="true">
+          <p class="h2 tabs-label">The age of <em>tabs</em></p>
+          <p class="h2 trail-label">The age of the <em>trail</em></p>
+        </div>
+        <div class="morph-canvas" role="img" aria-label="A row of browser tabs stretches into columns laid side by side, older pages narrower and fainter, the current page widest.">
+          <div class="morph-sheet" aria-hidden="true">
+            <h5>Paper boat</h5>
+            <i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i>
+          </div>
+          <div class="morph-item" aria-hidden="true"><span class="t">Inbox (3)</span><div class="body"><i></i><i></i><i></i><i></i><i></i><i></i></div></div>
+          <div class="morph-item" aria-hidden="true"><span class="t">Pull request #212</span><div class="body"><i></i><i></i><i></i><i></i><i></i><i></i></div></div>
+          <div class="morph-item" aria-hidden="true"><span class="t">WebKit docs</span><div class="body"><i></i><i></i><i></i><i></i><i></i><i></i></div></div>
+          <div class="morph-item" aria-hidden="true"><span class="t">Flights to Lisbon</span><div class="body"><i></i><i></i><i></i><i></i><i></i><i></i></div></div>
+          <div class="morph-item is-active" aria-hidden="true"><span class="t">Paper boat · Wikipedia</span><div class="body"><h5>Paper boat</h5><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i></div></div>
+        </div>
+        <div class="morph-caption">
+          <p>One page on screen. Everything else is a title squeezed into a strip.</p>
+          <p>Every page you opened, in the order you opened it. The one you're reading gets the room.</p>
+        </div>
+      </div>
+    </section>
+
+    <section class="section" aria-labelledby="rules-title">
+      <div class="wrap">
+        <div class="section-head">
+          <p class="label" data-reveal>Principles</p>
+          <h2 id="rules-title" class="h2" data-split>Five rules for a <em>modern</em> browser.</h2>
+        </div>
+        <ol class="principles">
+          <li class="principle">
+            <span class="num" aria-hidden="true">01</span>
+            <h3 data-reveal>Show the path.</h3>
+            <p data-reveal style="--i: 1">Every link opens beside the page you came from. To get back, you scroll left. There is no tab to hunt for, because nothing went into a tab.</p>
+          </li>
+          <li class="principle">
+            <span class="num" aria-hidden="true">02</span>
+            <h3 data-reveal>Remember the way people do.</h3>
+            <p data-reveal style="--i: 1">A bookmark keeps an address. A moment keeps your scroll position, the words you selected and a note on why. Wake checks saved pages in the background and tells you what changed.</p>
+          </li>
+          <li class="principle">
+            <span class="num" aria-hidden="true">03</span>
+            <h3 data-reveal>Get out of the way.</h3>
+            <p data-reveal style="--i: 1">The toolbar floats as glass and appears when you reach for it. Zen hides it completely. The page gets the window.</p>
+          </li>
+          <li class="principle">
+            <span class="num" aria-hidden="true">04</span>
+            <h3 data-reveal>Be a real Mac app.</h3>
+            <p data-reveal style="--i: 1">SwiftUI and AppKit for the interface, WebKit for the pages. No Chromium, no Electron, no second browser engine bundled inside.</p>
+          </li>
+          <li class="principle">
+            <span class="num" aria-hidden="true">05</span>
+            <h3 data-reveal>Work in the open.</h3>
+            <p data-reveal style="--i: 1">MIT licensed. The code, the issues and every release are on GitHub, and updates are signed so an installed copy only accepts real ones.</p>
+          </li>
+        </ol>
+      </div>
+    </section>
+
+    <section class="section" aria-labelledby="name-title" style="padding-top: 0">
+      <div class="wrap anatomy">
+        <svg class="mark" viewBox="80 80 864 864" role="img" aria-label="The Wake icon: a page leaving a wake of slimmer copies of itself">
+          <defs>
+            <linearGradient id="icon-ground" x1="0" y1="0" x2="0" y2="1">
+              <stop offset="0" stop-color="#3d5bff"/>
+              <stop offset="1" stop-color="#1f32d6"/>
+            </linearGradient>
+          </defs>
+          <rect x="100" y="100" width="824" height="824" rx="186" fill="url(#icon-ground)"/>
+          <g fill="#fff">
+            <rect class="slice" style="--o: .18" x="283" y="288" width="18" height="448" rx="9"/>
+            <rect class="slice" style="--o: .34" x="325" y="288" width="40" height="448" rx="20"/>
+            <rect class="slice" style="--o: .58" x="389" y="288" width="72" height="448" rx="36"/>
+            <rect class="slice" style="--o: 1" x="485" y="288" width="256" height="448" rx="58"/>
+          </g>
+        </svg>
+        <div>
+          <p class="label" data-reveal>The name</p>
+          <h2 id="name-title" class="h2" data-split>A page, and the <em>wake</em> it leaves.</h2>
+          <p class="lead" data-reveal>The icon is a page moving forward, with slimmer, fainter copies of itself trailing behind. That's the trail of columns, and it's where the name comes from.</p>
+          <p class="lead" data-reveal style="--i: 1">The first-launch tour tells the same story on live water: a Metal shader, a paper boat, and the wake behind it. The download page runs a WebGL port of that shader.</p>
+        </div>
+      </div>
+    </section>
+
+    <section class="marquee" aria-labelledby="stack-title">
+      <h2 id="stack-title" class="sr-only">What Wake is made of</h2>
+      <p class="marquee-track" aria-hidden="true">
+        <span>SwiftUI</span><span>AppKit</span><span>WebKit</span><span>Metal</span><span>Sparkle</span><span>Swift&nbsp;6</span><span>SwiftUI</span><span>AppKit</span>
+      </p>
+      <div class="wrap marquee-note">
+        <p class="lead" data-reveal>Made from Apple's own frameworks. Pages render in WebKit, the engine behind Safari, so sites behave the way they do there. Wake runs on macOS 14 and later, and uses Liquid Glass on macOS 26.</p>
+      </div>
+    </section>
+
+    <section class="section" aria-labelledby="maker-title">
+      <div class="wrap maker">
+        <img class="maker-avatar" src="assets/amiralibgi.png" alt="Illustrated portrait of amiralibgi" width="176" height="176" data-reveal>
+        <div>
+          <p class="label" data-reveal>Who's building it</p>
+          <h2 id="maker-title" class="h2" data-split>Built by <em>amiralibgi,</em> in the open.</h2>
+          <p class="lead" data-reveal style="--i: 2">Wake is written in Swift, one feature per folder, and every commit is public. If a site breaks in Wake, open an issue. If you want to see what's coming next, follow along on X.</p>
+          <div class="maker-links" data-reveal style="--i: 3">
+            <a class="btn btn-ghost" href="https://x.com/_amiralibgi">
+              <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M17.75 3h3.07l-6.7 7.66L22 21h-6.17l-4.83-6.32L5.47 21H2.4l7.17-8.2L2 3h6.33l4.37 5.77L17.75 3Zm-1.08 16.2h1.7L7.4 4.73H5.58L16.67 19.2Z"/></svg>
+              @_amiralibgi
+            </a>
+            <a class="btn btn-ghost" href="https://github.com/amiralibg/wake">
+              <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M12 2a10 10 0 0 0-3.16 19.49c.5.09.68-.22.68-.48v-1.7c-2.78.6-3.37-1.34-3.37-1.34-.45-1.16-1.11-1.47-1.11-1.47-.91-.62.07-.61.07-.61 1 .07 1.53 1.03 1.53 1.03.9 1.52 2.34 1.08 2.91.83.09-.65.35-1.08.63-1.33-2.22-.25-4.55-1.11-4.55-4.94 0-1.09.39-1.98 1.03-2.68-.1-.25-.45-1.27.1-2.64 0 0 .84-.27 2.75 1.02a9.56 9.56 0 0 1 5 0c1.91-1.3 2.75-1.02 2.75-1.02.55 1.37.2 2.39.1 2.64.64.7 1.03 1.59 1.03 2.68 0 3.84-2.34 4.68-4.57 4.93.36.31.68.92.68 1.85v2.74c0 .27.18.58.69.48A10 10 0 0 0 12 2Z"/></svg>
+              amiralibg/wake
+            </a>
+          </div>
+        </div>
+      </div>
+
+      <div class="wrap" style="margin-top: clamp(64px, 9vw, 128px)">
+        <div class="beta-note" data-reveal>
+          <span class="beta">Beta</span>
+          <div>
+            <p>Every 0.x release is a beta. Expect rough edges, and please report what you find in <a class="textlink" href="https://github.com/amiralibg/wake/issues">GitHub Issues</a>.</p>
+            <p>Wake isn't signed with an Apple Developer ID yet. The <a class="textlink" href="./#download">download page</a> has the one-line fix for the warning macOS shows.</p>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section class="water band on-water" data-water="still" data-bow-y="0.8" aria-labelledby="band-title">
+      <canvas aria-hidden="true"></canvas>
+      <div class="wrap">
+        <p class="label">Wake <span data-version>0.1.0</span> beta · macOS 14 or later</p>
+        <h2 id="band-title" class="h2" data-split>Ready for the <em>new age?</em></h2>
+        <a class="btn btn-primary btn-large" data-dmg href="https://github.com/amiralibg/wake/releases/download/v0.1.0/Wake-0.1.0.dmg">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 4v11M7 10.5 12 15.5l5-5M5 20h14"/></svg>
+          Download for Mac
+        </a>
+        <a class="textlink" href="./#download">See the install steps</a>
+      </div>
+    </section>
+  </main>
+
+  <footer class="footer">
+    <div class="wrap">
+      <a class="byline" href="https://x.com/_amiralibgi">
+        <img src="assets/amiralibgi.png" alt="" width="40" height="40">
+        <span><small>Built by</small><strong>amiralibgi</strong></span>
+      </a>
+      <nav aria-label="Footer">
+        <a href="./">Download</a>
+        <a href="https://github.com/amiralibg/wake">GitHub repo</a>
+        <a href="https://github.com/amiralibg/wake/releases">Releases</a>
+        <a href="https://github.com/amiralibg/wake/issues">Report an issue</a>
+        <a href="https://x.com/_amiralibgi">@_amiralibgi on X</a>
+      </nav>
+    </div>
+  </footer>
+</body>
+</html>
