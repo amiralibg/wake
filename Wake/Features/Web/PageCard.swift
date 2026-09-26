@@ -28,9 +28,15 @@ struct PageCard: View {
                         .transition(.scale(scale: 0.8).combined(with: .opacity))
                 }
             }
-            .background(Color(nsColor: .textBackgroundColor), in: .rect(cornerRadius: radius, style: .continuous))
+            // The shadow is cast by a plain shape behind the card, not by the card:
+            // shadowing the live web view makes Core Animation re-render the shadow
+            // offscreen every time the page's pixels change (every scroll frame).
+            .background {
+                RoundedRectangle(cornerRadius: radius, style: .continuous)
+                    .fill(Color(nsColor: .textBackgroundColor))
+                    .shadow(color: .black.opacity(isFocused ? 0.24 : 0.08), radius: isFocused ? 26 : 8, y: isFocused ? 18 : 4)
+            }
             .overlay(RoundedRectangle(cornerRadius: radius, style: .continuous).stroke(.black.opacity(0.12), lineWidth: 0.5))
-            .shadow(color: .black.opacity(isFocused ? 0.24 : 0.08), radius: isFocused ? 26 : 8, y: isFocused ? 18 : 4)
     }
 }
 

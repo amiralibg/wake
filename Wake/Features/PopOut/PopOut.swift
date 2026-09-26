@@ -161,9 +161,12 @@ final class PopOutController {
     func open(_ pick: PopOutPick, near window: NSWindow?) {
         let popOut = PopOut(pick: pick)
         let panel = PopOutPanel(popOut: popOut)
-        popOut.onClose = { [weak self, weak panel] in
+        // Weak all round: the pop-out owns this closure, so capturing it would keep
+        // every closed pop-out (and its web view's WebContent process) alive.
+        popOut.onClose = { [weak self, weak panel, id = popOut.id] in
+            panel?.popOut.webView.stopLoading()
             panel?.close()
-            self?.panels[popOut.id] = nil
+            self?.panels[id] = nil
         }
         panels[popOut.id] = panel
         // Beside the window's top-right corner, cascading if there are several.

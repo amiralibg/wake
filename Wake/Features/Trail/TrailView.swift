@@ -55,12 +55,20 @@ struct TrailView: View {
             }
             .frame(width: proxy.size.width, height: proxy.size.height, alignment: .topLeading)
             .onChange(of: geometry, initial: true) { _, new in trail.geometry = new }
+            .onChange(of: onStage(geometry, offset: offset), initial: true) { _, ids in trail.setOnStage(ids) }
             // While an edge is dragged the columns track the pointer exactly.
             .animation(trail.isResizing ? nil : .trail, value: geometry)
         }
         .background(TrailGestureRouter(trail: trail, isEnabled: isInteractive, onPageScroll: onPageScroll))
         .padding(.top, isZen ? outerInset : 4)
         .padding(.bottom, outerInset)
+    }
+
+    /// Columns on the stage, or within a quarter stage of it (the next one to slide
+    /// in). Everything else is off to the side and can let WebKit throttle it.
+    private func onStage(_ geometry: TrailGeometry, offset: CGFloat) -> Set<BrowserPage.ID> {
+        let indices = geometry.indices(onStageAt: offset, margin: geometry.stageWidth / 4)
+        return Set(trail.columns.indices.filter(indices.contains).map { trail.columns[$0].id })
     }
 
     private func edgeHandle(_ page: BrowserPage, _ edge: TrailModel.Edge, outside: CGFloat) -> some View {

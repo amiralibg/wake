@@ -19,6 +19,7 @@ enum PopOutScripts {
           Object.assign(label.style, { position: 'fixed', zIndex: 2147483647, pointerEvents: 'none', display: 'none',
             font: '600 11px -apple-system, system-ui, sans-serif', color: '#fff', background: '#0A84FF',
             padding: '3px 8px', borderRadius: '6px', whiteSpace: 'nowrap' });
+          box.dataset.wakeOverlay = ''; label.dataset.wakeOverlay = '';
           document.documentElement.append(box, label);
 
           const big = (el) => { const r = el.getBoundingClientRect(); return r.width >= 40 && r.height >= 20; };

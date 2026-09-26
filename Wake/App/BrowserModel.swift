@@ -13,6 +13,7 @@ final class BrowserModel {
     let apps = PinnedAppsModel()
     /// In Zen, whether the app capsule has slid in from the left edge.
     var isCapsuleRevealed = false
+    @ObservationIgnored private var capsuleConcealTask: Task<Void, Never>?
     private(set) var isPaletteOpen = false
     private(set) var isSettingsOpen = false
     var settingsSection: SettingsSection = .appearance
@@ -20,6 +21,9 @@ final class BrowserModel {
         didSet {
             UserDefaults.standard.set(isZen, forKey: "window.zen")
             isChromeRevealed = false
+            // A reveal belongs to the mode it happened in; carried over, the capsule
+            // would sit in Zen uninvited (or slide down into place when leaving it).
+            concealCapsule(animated: false)
         }
     }
     /// In Zen mode, whether the toolbar is currently slid in.
@@ -41,12 +45,19 @@ final class BrowserModel {
     var momentsLayout: MomentsLayout = .grid
     /// The moment just saved, while its note island is up.
     var savedMoment: MomentRecord?
+    /// The "Import from Another Browser" sheet.
+    var isImportingBrowserData = false
 
     @ObservationIgnored private let store = ThreadStore.shared
     @ObservationIgnored private let thumbnails = ThumbnailStore.shared
     /// Threads switched away from stay alive (media keeps playing) up to this many.
     @ObservationIgnored private var backgroundThreads: [BrowserThread] = []
     @ObservationIgnored private let maxBackgroundThreads = 4
+    /// A thread left alone this long in the background is discarded: its web views go,
+    /// its columns and scroll positions stay, and it reloads when you come back.
+    /// Measured: ~280 MB for a thread of four ordinary pages.
+    private static let discardAfter: Duration = .seconds(10 * 60)
+    @ObservationIgnored private var discardTasks: [UUID: Task<Void, Never>] = [:]
     @ObservationIgnored private var peekHideTask: Task<Void, Never>?
     /// The window this model drives, so menu commands can find it without relying
     /// on SwiftUI focus (which can be missing while a web view is first responder).
@@ -93,7 +104,7 @@ final class BrowserModel {
     var page: BrowserPage? { trail.focused }
 
     var recents: [RecentPage] {
-        store.recentVisits().map { RecentPage(url: $0.url, title: $0.title, visitedAt: $0.visitedAt) }
+        HistoryStore.shared.recentVisits().map { RecentPage(url: $0.url, title: $0.title, visitedAt: $0.visitedAt) }
     }
 
     /// ⌘W closes the innermost thing: an overlay, the showing app, then the focused
@@ -179,8 +190,10 @@ final class BrowserModel {
         case .open(let url): open(url)
         case .result(let result): open(result.url)
         case .recent(let recent): open(recent.url)
-        case .suggestion(let text): palette.query = text
-        case .searchOnWeb(let query): open(SearchService.resultsPageURL(for: query))
+        // With palette results, a suggestion refines them in place; without, it searches.
+        case .suggestion(let text):
+            if SearchKeyStore.hasBraveAPIKey { palette.query = text } else { open(BrowsingSettings.shared.searchURL(for: text)) }
+        case .searchOnWeb(let query): open(BrowsingSettings.shared.searchURL(for: query))
         }
     }
 
@@ -372,15 +385,36 @@ final class BrowserModel {
         withAnimation(.chrome) { apps.unpin(app) }
     }
 
-    /// The pointer reached the left edge: slide the floating app capsule in.
+    /// The pointer reached the left edge: slide the floating app capsule in. It slides
+    /// back out once the pointer leaves it, or if the pointer never goes onto it.
     func revealCapsule() {
         guard capsuleFloats, !isCapsuleRevealed else { return }
         withAnimation(.chrome) { isCapsuleRevealed = true }
+        scheduleCapsuleConceal()
     }
 
-    func concealCapsule() {
+    func concealCapsule(animated: Bool = true) {
+        capsuleConcealTask?.cancel()
         guard isCapsuleRevealed else { return }
-        withAnimation(.chrome) { isCapsuleRevealed = false }
+        if animated {
+            withAnimation(.chrome) { isCapsuleRevealed = false }
+        } else {
+            isCapsuleRevealed = false
+        }
+    }
+
+    /// The pointer is on the capsule (true) or left it (false).
+    func capsuleHovered(_ inside: Bool) {
+        if inside { capsuleConcealTask?.cancel() } else { concealCapsule() }
+    }
+
+    private func scheduleCapsuleConceal() {
+        capsuleConcealTask?.cancel()
+        capsuleConcealTask = Task { [weak self] in
+            try? await Task.sleep(for: .seconds(1.6))
+            guard !Task.isCancelled else { return }
+            self?.concealCapsule()
+        }
     }
 
     // MARK: Developer
@@ -393,6 +427,25 @@ final class BrowserModel {
     func toggleDevTools() {
         guard let webPage else { return }
         trail.toggleDevTools(for: webPage)
+    }
+
+    /// Opens DevTools beside the page (if closed) on `tab`.
+    func showDevTools(_ tab: DevToolsSession.Tab) {
+        guard let webPage else { return }
+        webPage.inspector.tab = tab
+        if trail.devTools(for: webPage) == nil { trail.toggleDevTools(for: webPage) }
+    }
+
+    /// DevTools on Elements with the in-page picker running.
+    func inspectElement() {
+        guard let webPage else { return }
+        showDevTools(.elements)
+        webPage.inspector.setPicking(true)
+    }
+
+    func showWebInspector() {
+        guard let webPage else { return }
+        WebInspector.toggle(for: webPage.webView)
     }
 
     /// Flips developer mode for the whole thread and reloads, so the hooks see the
@@ -503,8 +556,18 @@ final class BrowserModel {
     }
 
     func deleteThread(id: UUID) {
-        guard id != thread.id, store.owner(of: id) == nil else { return }
+        guard id != thread.id else { return }
+        // A thread you've switched away from is still loaded (and claimed) here: let
+        // it go first, or the delete silently did nothing.
+        if let live = backgroundThreads.first(where: { $0.id == id }) {
+            backgroundThreads.removeAll { $0 === live }
+            discardTasks.removeValue(forKey: id)?.cancel()
+            unload(live)
+        }
+        // Shown in another window: that window owns it.
+        guard store.owner(of: id) == nil else { return }
         store.delete(threadID: id)
+        thumbnails.remove(id)
         threadListVersion += 1
     }
 
@@ -513,15 +576,20 @@ final class BrowserModel {
         let previous = thread
         if saveCurrent { store.save(previous) }
         backgroundThreads.removeAll { $0 === next || $0 === previous }
-        if keepAlive, !previous.trail.columns.isEmpty {
+        discardTasks.removeValue(forKey: next.id)?.cancel()
+        if keepAlive, previous.isLoaded {
             backgroundThreads.insert(previous, at: 0)
+            scheduleDiscard(previous)
         } else {
             unload(previous)
         }
-        // Past the limit, unload the least recent thread that isn't playing anything.
-        while backgroundThreads.count > maxBackgroundThreads,
-              let victim = backgroundThreads.last(where: { !$0.trail.columns.contains(where: \.isPlayingMedia) }) ?? backgroundThreads.last {
+        // Past the limit, unload the least recent loaded thread that isn't playing
+        // anything. (Discarded threads hold no web views and don't count.)
+        while backgroundThreads.filter(\.isLoaded).count > maxBackgroundThreads,
+              let victim = backgroundThreads.last(where: { $0.isLoaded && !$0.trail.columns.contains(where: \.isPlayingMedia) })
+                ?? backgroundThreads.last(where: \.isLoaded) {
             backgroundThreads.removeAll { $0 === victim }
+            discardTasks.removeValue(forKey: victim.id)?.cancel()
             store.save(victim)
             unload(victim)
         }
@@ -530,6 +598,41 @@ final class BrowserModel {
         }
         activate(next)
         threadListVersion += 1
+    }
+
+    private func scheduleDiscard(_ thread: BrowserThread) {
+        discardTasks[thread.id]?.cancel()
+        discardTasks[thread.id] = Task { [weak self, weak thread] in
+            try? await Task.sleep(for: Self.discardAfter)
+            guard !Task.isCancelled, let self, let thread else { return }
+            await self.discard(thread)
+        }
+    }
+
+    /// Frees a background thread's web views unless it's playing something or has a
+    /// form you've typed into; then it's tried again later.
+    private func discard(_ thread: BrowserThread) async {
+        discardTasks[thread.id] = nil
+        guard thread !== self.thread, backgroundThreads.contains(where: { $0 === thread }), thread.isLoaded else { return }
+        if thread.trail.columns.contains(where: { $0.isPlayingMedia || $0.hasUnsavedInput }) {
+            scheduleDiscard(thread)
+            return
+        }
+        store.save(thread)
+        await thread.discard { [weak self, weak thread] in
+            guard let self, let thread else { return false }
+            return thread !== self.thread
+        }
+    }
+
+    /// Memory is critically short: discard every background thread that can go.
+    static func discardBackgroundThreads() {
+        all.removeAll { $0.value == nil }
+        for model in all.compactMap(\.value) {
+            for thread in model.backgroundThreads where thread.isLoaded {
+                Task { await model.discard(thread) }
+            }
+        }
     }
 
     private func unload(_ thread: BrowserThread) {
@@ -546,7 +649,11 @@ final class BrowserModel {
         }
         trail.onChange = { [weak self, weak thread] in
             guard let self, let thread else { return }
-            thread.lastActiveAt = .now
+            // Pages in a thread you've left keep changing their URL and title (single-
+            // page apps do constantly). That's worth saving, but it isn't you using the
+            // thread: counted as activity, it made a background thread look like the
+            // one to resume at launch, and kept it hot in the Deck.
+            if thread === self.thread { thread.lastActiveAt = .now }
             self.store.scheduleSave(thread)
         }
         thread.restoreIfNeeded()
@@ -554,7 +661,11 @@ final class BrowserModel {
 
     private func remember(_ page: BrowserPage) {
         if page === self.page { captureThumbnail() }
+        if page.isRestoring {
+            page.isRestoring = false
+            return
+        }
         guard let url = page.url, url.scheme?.hasPrefix("http") == true else { return }
-        store.recordVisit(url: url, title: page.title)
+        HistoryStore.shared.recordVisit(url: url, title: page.title)
     }
 }

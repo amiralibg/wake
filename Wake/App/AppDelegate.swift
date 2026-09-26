@@ -9,8 +9,20 @@ import AppKit
 /// trigger the File ▸ New Window command ourselves when no window is up.
 final class AppDelegate: NSObject, NSApplicationDelegate {
     func applicationDidFinishLaunching(_ notification: Notification) {
+        MainActor.assumeIsolated {
+            AppUpdater.shared.start()
+            MemoryPressure.start()
+        }
+        #if BENCH
+        MainActor.assumeIsolated { Benchmark.startIfRequested() }
+        #endif
         DispatchQueue.main.asyncAfter(deadline: .now() + 0.4) {
             MainActor.assumeIsolated { Self.openWindowIfNeeded() }
+        }
+        // History's one-off upkeep (e.g. giving old visits a searchable address)
+        // runs once the first window is up, rather than when History first opens.
+        DispatchQueue.main.asyncAfter(deadline: .now() + 3) {
+            MainActor.assumeIsolated { _ = HistoryStore.shared }
         }
     }
 

@@ -10,6 +10,8 @@ final class BrowserThread: Identifiable {
         let url: URL
         let title: String
         let widthFraction: CGFloat?
+        /// Where the page was scrolled to, when the thread was discarded (not saved).
+        var scrollY: Double?
     }
 
     let id: UUID
@@ -52,6 +54,32 @@ final class BrowserThread: Identifiable {
     }
 
     var pageCount: Int { max(trail.columns.count, pendingColumns.count) }
+
+    /// Whether the thread's pages are loaded (a discarded or not-yet-shown thread
+    /// only has its column list).
+    var isLoaded: Bool { !trail.columns.isEmpty }
+
+    /// Lets the thread's web views go (and their WebContent processes), keeping what's
+    /// needed to bring it back as it was: its columns, widths, focus and where each
+    /// page was scrolled to. The thumbnail stays in `ThumbnailStore`. `stillWanted`
+    /// is checked after reading scroll positions, in case you came back meanwhile.
+    ///
+    /// Limitation: WebKit has no public way to suspend a page and keep its state, so
+    /// what lives only in the page (form input, a video's position, a single-page
+    /// app's in-memory state) is lost; the page reloads when you return.
+    func discard(if stillWanted: () -> Bool) async {
+        guard isLoaded else { return }
+        let current = snapshot
+        var columns = current.columns
+        let pages = trail.columns.filter { !$0.isEphemeral && ($0.url ?? $0.requestedURL) != nil }
+        for (index, page) in pages.enumerated() where columns.indices.contains(index) {
+            columns[index].scrollY = await page.scrollY()
+        }
+        guard stillWanted(), isLoaded else { return }
+        pendingColumns = columns
+        pendingFocus = current.focusedIndex
+        trail.closeAll()
+    }
 
     /// Creates the pages. Call after the owner has hooked `trail` up.
     func restoreIfNeeded() {

@@ -74,11 +74,12 @@ final class TrailModel {
         companions.forEach(close)
         focused.map(makeFirstResponder)
         onChange()
+        release([page])
     }
 
     /// Closes every column, e.g. when the thread is resolved.
     func closeAll() {
-        columns.forEach { $0.webView.stopLoading() }
+        release(columns)
         columns = []
         customWidths = [:]
         focusedIndex = 0
@@ -90,6 +91,8 @@ final class TrailModel {
         let pages = snapshots.map { snapshot -> BrowserPage in
             let page = makePage()
             if snapshots.count > 1, let fraction = snapshot.widthFraction { customWidths[page.id] = fraction }
+            page.isRestoring = true
+            page.pendingScrollY = snapshot.scrollY
             page.load(snapshot.url)
             return page
         }
@@ -99,6 +102,15 @@ final class TrailModel {
 
     func closeFocused() {
         focused.map(close)
+    }
+
+    /// Frees closed pages' web views once their cards have animated away.
+    private func release(_ pages: [BrowserPage]) {
+        pages.forEach { $0.stopLoading() }
+        Task {
+            try? await Task.sleep(for: .seconds(1))
+            pages.forEach { $0.close() }
+        }
     }
 
     struct ClosedColumn {
@@ -193,6 +205,13 @@ final class TrailModel {
         page.developerModeOverride = developerModeOverride
         didCreatePage(page)
         return page
+    }
+
+    // MARK: Stage
+
+    /// Tells each page whether it's on (or near) the stage.
+    func setOnStage(_ ids: Set<BrowserPage.ID>) {
+        for page in columns { page.setOnStage(ids.contains(page.id)) }
     }
 
     // MARK: Focus

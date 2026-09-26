@@ -51,6 +51,15 @@ struct TrailGeometry: Equatable {
         widths.indices.contains(index) ? widths[index] : 0
     }
 
+    /// Columns that are on the stage at `offset`, or within `margin` of it (so a
+    /// column about to slide in is already drawing).
+    func indices(onStageAt offset: CGFloat, margin: CGFloat) -> Set<Int> {
+        Set((0..<count).filter { index in
+            let start = x(of: index) - offset
+            return start + width(of: index) > -margin && start < stageWidth + margin
+        })
+    }
+
     private var maxOffset: CGFloat { max(0, contentWidth - stageWidth) }
 
     /// Centre the focused column (with `span - 1` companion columns after it, such as

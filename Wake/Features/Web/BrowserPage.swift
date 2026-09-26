@@ -8,7 +8,9 @@ import WebKit
 @Observable
 final class BrowserPage: NSObject, Identifiable {
     let id = UUID()
-    @ObservationIgnored let webView: WKWebView
+    /// Replaced by an empty placeholder once the page is closed (see `close()`).
+    @ObservationIgnored private(set) var webView: WKWebView
+    @ObservationIgnored private(set) var isClosed = false
 
     private(set) var title = ""
     private(set) var url: URL?
@@ -31,6 +33,17 @@ final class BrowserPage: NSObject, Identifiable {
 
     /// Console, network and HMR observed while in developer mode.
     let devtools = DevToolsLog()
+    /// Set from DevTools ▸ Tools: the next documents load with their scripts off.
+    var isJavaScriptDisabled = false
+    @ObservationIgnored private var session: DevToolsSession?
+    /// Elements, storage, performance and page overrides for the DevTools column.
+    /// Made on first use: most pages are never inspected.
+    var inspector: DevToolsSession {
+        if let session { return session }
+        let made = DevToolsSession(page: self)
+        session = made
+        return made
+    }
     private(set) var isDeveloperMode = false
     /// The thread's choice; `nil` means automatic (on for localhost).
     var developerModeOverride: Bool? {
@@ -64,11 +77,16 @@ final class BrowserPage: NSObject, Identifiable {
 
     /// A moment to take the next loaded document back to (scroll and highlight).
     @ObservationIgnored var pendingRestore: MomentRestore?
+    /// Where to scroll once the next document has loaded (a discarded thread coming back).
+    @ObservationIgnored var pendingScrollY: Double?
     /// Called once a restore has been applied, e.g. to refresh the moment's baseline.
     @ObservationIgnored var onRestored: ((BrowserPage) -> Void)?
 
     /// Called after each committed main-frame load finishes.
     @ObservationIgnored var onDidFinish: ((BrowserPage) -> Void)?
+    /// Set while a restored column loads its saved page: bringing a thread back isn't
+    /// a new visit, so History skips that first load.
+    @ObservationIgnored var isRestoring = false
     /// A link was clicked: open it as a new column (`background` = don't focus it).
     @ObservationIgnored var onOpenLink: ((URL, _ background: Bool) -> Void)?
     /// `target=_blank` / `window.open`: return the web view that hosts the popup.
@@ -93,6 +111,9 @@ final class BrowserPage: NSObject, Identifiable {
         webView.allowsMagnification = true
         webView.isInspectable = true
         observeWebView()
+        #if BENCH
+        Benchmark.track(self)
+        #endif
     }
 
     /// A DevTools column for `target`. It never loads anything itself.
@@ -123,10 +144,69 @@ final class BrowserPage: NSObject, Identifiable {
 
     func reload() { webView.reload() }
 
+    /// The document's vertical scroll position, or nil if it can't be read.
+    func scrollY() async -> Double? {
+        try? await webView.evaluateJavaScript("window.scrollY") as? Double
+    }
+
     /// Reloads without the cache (⌥⌘R).
     func reloadFromOrigin() { webView.reloadFromOrigin() }
 
     func stopLoading() { webView.stopLoading() }
+
+    /// Columns scrolled well off the stage are hidden from WebKit, which then treats
+    /// the page like a background tab: timers are throttled, requestAnimationFrame
+    /// and CSS animations stop, and nothing is painted. Audio keeps playing.
+    ///
+    /// Limitation: WebKit only learns visibility from the view (hidden, or out of a
+    /// window) and the window's occlusion; a view that is merely clipped or scrolled
+    /// away still counts as visible, hence the explicit hiding.
+    func setOnStage(_ onStage: Bool) {
+        hideTask?.cancel()
+        hideTask = nil
+        if onStage {
+            if webView.isHidden { webView.isHidden = false }
+        } else if !webView.isHidden {
+            // After the trail has finished sliding it out of view.
+            hideTask = Task { [weak self] in
+                try? await Task.sleep(for: .seconds(1.5))
+                guard !Task.isCancelled, let self, self.webView.window?.firstResponder !== self.webView else { return }
+                self.webView.isHidden = true
+            }
+        }
+    }
+
+    @ObservationIgnored private var hideTask: Task<Void, Never>?
+
+    /// The column is gone for good: let its web view, and the WebContent process
+    /// behind it, go now.
+    ///
+    /// SwiftUI can keep a removed view's values (and through them this page) until
+    /// that part of the window next updates: the toolbar's trail chips, a context
+    /// menu, a hover callback. Measured, closed pages kept 100–500 MB each for as
+    /// long as the window sat idle. Swapping in an empty web view that never loads
+    /// (WebKit starts a WebContent process on first load) frees the real one no
+    /// matter who still holds the page.
+    func close() {
+        guard !isClosed else { return }
+        isClosed = true
+        hideTask?.cancel()
+        observations.forEach { $0.invalidate() }
+        observations = []
+        let old = webView
+        old.stopLoading()
+        old.navigationDelegate = nil
+        old.uiDelegate = nil
+        old.removeFromSuperview()
+        webView = WKWebView(frame: .zero, configuration: Self.closedConfiguration)
+        session = nil
+    }
+
+    private static let closedConfiguration: WKWebViewConfiguration = {
+        let configuration = WKWebViewConfiguration()
+        configuration.websiteDataStore = .nonPersistent()
+        return configuration
+    }()
 
     // MARK: Zoom
 
@@ -215,6 +295,11 @@ final class BrowserPage: NSObject, Identifiable {
         }
     }
 
+    func receiveDevToolsMessage(_ body: Any) {
+        guard let message = body as? [String: Any] else { return }
+        session?.receive(message)
+    }
+
     static func isLocal(_ url: URL?) -> Bool {
         guard let host = url?.host()?.lowercased() else { return false }
         return ["localhost", "127.0.0.1", "0.0.0.0", "::1", "[::1]"].contains(host)
@@ -294,7 +379,15 @@ final class BrowserPage: NSObject, Identifiable {
                 }
             },
             webView.observe(\.estimatedProgress, options: [.new]) { [weak self] view, _ in
-                MainActor.assumeIsolated { self?.progress = view.estimatedProgress }
+                MainActor.assumeIsolated {
+                    // WebKit reports progress in tiny steps; each published change
+                    // re-renders the loading line, so only steps of 2% or the ends count.
+                    guard let self else { return }
+                    let value = view.estimatedProgress
+                    if abs(value - self.progress) >= 0.02 || value >= 1 || value < self.progress {
+                        self.progress = value
+                    }
+                }
             },
             webView.observe(\.isLoading, options: [.new]) { [weak self] view, _ in
                 MainActor.assumeIsolated { self?.isLoading = view.isLoading }
@@ -334,17 +427,22 @@ final class BrowserPage: NSObject, Identifiable {
 }
 
 extension BrowserPage: WKNavigationDelegate {
-    func webView(_ webView: WKWebView, decidePolicyFor action: WKNavigationAction) async -> WKNavigationActionPolicy {
-        guard let url = action.request.url, let scheme = url.scheme?.lowercased() else { return .allow }
+    func webView(
+        _ webView: WKWebView,
+        decidePolicyFor action: WKNavigationAction,
+        preferences: WKWebpagePreferences
+    ) async -> (WKNavigationActionPolicy, WKWebpagePreferences) {
+        preferences.allowsContentJavaScript = !isJavaScriptDisabled
+        guard let url = action.request.url, let scheme = url.scheme?.lowercased() else { return (.allow, preferences) }
         if ["http", "https", "about", "blob", "data", "file"].contains(scheme) {
-            if interceptsAsColumn(action, url: url) { return .cancel }
+            if interceptsAsColumn(action, url: url) { return (.cancel, preferences) }
             // Before the document loads, so developer hooks are in place from its start.
             if action.targetFrame?.isMainFrame != false { updateDeveloperMode(for: url) }
-            return .allow
+            return (.allow, preferences)
         }
         // mailto:, facetime:, app deep links… belong to other apps.
         NSWorkspace.shared.open(url)
-        return .cancel
+        return (.cancel, preferences)
     }
 
     /// Backstop for link clicks the injected script didn't see (links in iframes that
@@ -392,6 +490,7 @@ extension BrowserPage: WKNavigationDelegate {
         live = LiveState(httpStatus: pendingHTTPStatus)
         pendingHTTPStatus = nil
         devtools.reset()
+        session?.documentChanged()
         pushMocks()
     }
 
@@ -400,6 +499,19 @@ extension BrowserPage: WKNavigationDelegate {
             webView.evaluateJavaScript(DevOverlayScripts.jsonViewer, in: nil, in: WebScripts.world) { _ in }
         }
         if syncsScroll { setScrollSync(true) }
+        if let y = pendingScrollY {
+            pendingScrollY = nil
+            if y > 0 {
+                // Pages that build themselves after the load event get a second try.
+                let script = "window.scrollTo(0, \(y))"
+                webView.evaluateJavaScript(script) { _, _ in }
+                Task { [weak self] in
+                    try? await Task.sleep(for: .milliseconds(600))
+                    guard let self, abs((await self.scrollY() ?? y) - y) > 4 else { return }
+                    _ = try? await self.webView.evaluateJavaScript(script)
+                }
+            }
+        }
         if let restore = pendingRestore {
             pendingRestore = nil
             Task {
@@ -409,6 +521,7 @@ extension BrowserPage: WKNavigationDelegate {
             }
         }
         Task { await resolveFavicon() }
+        session?.documentFinished()
         onDidFinish?(self)
     }
 
