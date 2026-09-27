@@ -8,10 +8,10 @@ import Sparkle
 ///
 /// Limitations:
 /// - Builds without a signing key (`SPARKLE_PUBLIC_ED_KEY` empty) don't check at all.
-/// - Releases signed ad hoc (no Developer ID) change their code signature on every
-///   build, so macOS may ask whether the updated Wake may keep its data, and
-///   Gatekeeper asks before the first launch of a downloaded copy. A Developer ID
-///   certificate in the release workflow removes both.
+/// - Without a Developer ID, releases are self-signed (or ad hoc, which changes
+///   identity on every build, so macOS may ask whether the updated Wake may keep
+///   its data), and Gatekeeper asks before the first launch of a copy downloaded
+///   in a browser. Sparkle clears the quarantine flag on the updates it installs.
 @MainActor
 @Observable
 final class AppUpdater {

@@ -7,9 +7,12 @@
 # Secrets:
 #   SPARKLE_PRIVATE_KEY   required. Signs the update archive; its public half is
 #                         SPARKLE_PUBLIC_ED_KEY in project.yml.
-#   Optional, for a Developer ID signed and notarized build (otherwise ad hoc):
+#   Optional, for a Developer ID signed and notarized build:
 #   DEVELOPER_ID_CERTIFICATE (base64 .p12), DEVELOPER_ID_CERTIFICATE_PASSWORD,
 #   APPLE_TEAM_ID, APPLE_ID, APPLE_APP_PASSWORD (app-specific password).
+#   Otherwise, optional, for a stable identity without a Developer ID (see
+#   Scripts/make-signing-certificate.sh): SELF_SIGNED_CERTIFICATE (base64 .p12),
+#   SELF_SIGNED_CERTIFICATE_PASSWORD. With neither, the build is signed ad hoc.
 name: Release
 
 on:
@@ -80,25 +83,49 @@ jobs:
           mkdir -p dist
           ditto build/DerivedData/Build/Products/Release/Wake.app dist/Wake.app
 
-      - name: Sign with Developer ID
-        if: env.HAS_DEVELOPER_ID == 'true'
+      - name: Sign
         env:
-          CERTIFICATE: ${{ secrets.DEVELOPER_ID_CERTIFICATE }}
-          CERTIFICATE_PASSWORD: ${{ secrets.DEVELOPER_ID_CERTIFICATE_PASSWORD }}
+          DEVELOPER_ID_CERTIFICATE: ${{ secrets.DEVELOPER_ID_CERTIFICATE }}
+          DEVELOPER_ID_CERTIFICATE_PASSWORD: ${{ secrets.DEVELOPER_ID_CERTIFICATE_PASSWORD }}
           TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
+          SELF_SIGNED_CERTIFICATE: ${{ secrets.SELF_SIGNED_CERTIFICATE }}
+          SELF_SIGNED_CERTIFICATE_PASSWORD: ${{ secrets.SELF_SIGNED_CERTIFICATE_PASSWORD }}
         run: |
           KEYCHAIN="$RUNNER_TEMP/release.keychain-db"
-          security create-keychain -p "" "$KEYCHAIN"
-          security set-keychain-settings -lut 3600 "$KEYCHAIN"
-          security unlock-keychain -p "" "$KEYCHAIN"
-          echo "$CERTIFICATE" | base64 --decode > "$RUNNER_TEMP/certificate.p12"
-          security import "$RUNNER_TEMP/certificate.p12" -k "$KEYCHAIN" -P "$CERTIFICATE_PASSWORD" -T /usr/bin/codesign
-          security set-key-partition-list -S apple-tool:,apple: -s -k "" "$KEYCHAIN"
-          security list-keychains -d user -s "$KEYCHAIN" $(security list-keychains -d user | tr -d '"')
-          IDENTITY=$(security find-identity -v -p codesigning "$KEYCHAIN" | grep "$TEAM_ID" | head -1 | awk '{print $2}')
+          import_certificate() { # base64 .p12, password
+            security create-keychain -p "" "$KEYCHAIN"
+            security set-keychain-settings -lut 3600 "$KEYCHAIN"
+            security unlock-keychain -p "" "$KEYCHAIN"
+            echo "$1" | base64 --decode > "$RUNNER_TEMP/certificate.p12"
+            security import "$RUNNER_TEMP/certificate.p12" -k "$KEYCHAIN" -P "$2" -T /usr/bin/codesign
+            rm "$RUNNER_TEMP/certificate.p12"
+            security set-key-partition-list -S apple-tool:,apple: -s -k "" "$KEYCHAIN"
+            security list-keychains -d user -s "$KEYCHAIN" $(security list-keychains -d user | tr -d '"')
+          }
+          # Hardened runtime is for notarized builds only. It turns on library
+          # validation, which only lets an app load frameworks from its own Team ID;
+          # ad hoc and self-signed code has none, so on users' Macs dyld refuses
+          # Sparkle.framework and Wake dies at launch ("Wake cannot be opened because
+          # of a problem"). Without a Developer ID, sign without it.
+          if [ "$HAS_DEVELOPER_ID" = true ]; then
+            import_certificate "$DEVELOPER_ID_CERTIFICATE" "$DEVELOPER_ID_CERTIFICATE_PASSWORD"
+            IDENTITY=$(security find-identity -v -p codesigning "$KEYCHAIN" | grep "$TEAM_ID" | head -1 | awk '{print $2}')
+            OPTIONS=(--timestamp --options runtime)
+          elif [ -n "$SELF_SIGNED_CERTIFICATE" ]; then
+            # One identity for every release, so macOS keeps Wake's data, keychain
+            # items and privacy permissions across updates. Not trusted by macOS
+            # (hence no -v), which codesign doesn't need.
+            import_certificate "$SELF_SIGNED_CERTIFICATE" "$SELF_SIGNED_CERTIFICATE_PASSWORD"
+            IDENTITY=$(security find-identity -p codesigning "$KEYCHAIN" | awk '/\)/ {print $2; exit}')
+            OPTIONS=()
+          else
+            IDENTITY=-
+            OPTIONS=()
+          fi
+          if [ -z "$IDENTITY" ]; then echo "::error::No signing identity in the certificate."; exit 1; fi
           # Inside out, as Sparkle documents: its helpers, the framework, then the app.
           SPARKLE=dist/Wake.app/Contents/Frameworks/Sparkle.framework/Versions/B
-          sign() { codesign --force --timestamp --options runtime --sign "$IDENTITY" "$@"; }
+          sign() { codesign --force "${OPTIONS[@]}" --sign "$IDENTITY" "$@"; }
           sign "$SPARKLE/XPCServices/Installer.xpc"
           sign --preserve-metadata=entitlements "$SPARKLE/XPCServices/Downloader.xpc"
           sign "$SPARKLE/Autoupdate"
@@ -106,6 +133,15 @@ jobs:
           sign dist/Wake.app/Contents/Frameworks/Sparkle.framework
           sign --entitlements Wake/Resources/Wake.entitlements dist/Wake.app
           codesign --verify --deep --strict dist/Wake.app
+          if [ "$HAS_DEVELOPER_ID" != true ]; then
+            for code in "$SPARKLE"/XPCServices/*.xpc "$SPARKLE/Autoupdate" "$SPARKLE/Updater.app" \
+                dist/Wake.app/Contents/Frameworks/Sparkle.framework dist/Wake.app; do
+              if codesign -dv "$code" 2>&1 | grep -q "flags=.*runtime"; then
+                echo "::error::$code has hardened runtime on without a Developer ID; Wake would crash at launch."; exit 1
+              fi
+            done
+          fi
+          codesign -dvv dist/Wake.app 2>&1 | grep -E "^(Authority|Signature|TeamIdentifier|CodeDirectory)"
 
       - name: Notarize
         if: env.HAS_DEVELOPER_ID == 'true'
