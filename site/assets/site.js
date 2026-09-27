@@ -253,6 +253,23 @@ document.querySelectorAll('[data-copy]').forEach((button) => {
   });
 });
 
+/* ---------- Download buttons also show the install steps ---------- */
+
+// The disk image alone lands people on macOS's "can't be opened" warning. The
+// download still starts (the link is followed as usual), and the page moves to
+// the steps that get past it, and to the Homebrew line that avoids it.
+const installSteps = document.querySelector('.howto');
+if (installSteps) {
+  document.querySelectorAll('[data-dmg]').forEach((button) => {
+    button.addEventListener('click', () => {
+      const nav = document.querySelector('.nav')?.getBoundingClientRect().height ?? 0;
+      const top = installSteps.getBoundingClientRect().top + scrollY - nav - 16;
+      // Smooth unless reduced motion is on: html's scroll-behavior decides.
+      scrollTo({ top });
+    });
+  });
+}
+
 /* ---------- Latest release from GitHub ---------- */
 
 const releaseTargets = document.querySelectorAll('[data-dmg], [data-version], [data-date], [data-size]');
