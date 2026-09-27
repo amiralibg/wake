@@ -310,14 +310,28 @@
         <ol class="howto">
           <li data-reveal>
             <div>
-              <h3>Download the disk image</h3>
-              <p>Open <code>Wake.dmg</code> and drag Wake into Applications.</p>
+              <h3>Install from Terminal</h3>
+              <p>Wake isn't signed with an Apple Developer ID yet, so macOS blocks a copy downloaded in a browser. Installed with Homebrew, it opens straight away.</p>
+              <div class="code">
+                <code>brew install --cask amiralibg/wake/wake</code>
+                <button class="copy" type="button" data-copy="brew install --cask amiralibg/wake/wake" aria-label="Copy command" aria-describedby="copy-status">
+                  <span class="idle">Copy</span><span class="done" aria-hidden="true">Copied</span>
+                </button>
+              </div>
+              <p class="muted" style="font-size: var(--t-small)">No Homebrew? This does the same:</p>
+              <div class="code">
+                <code>curl -fsSL https://raw.githubusercontent.com/amiralibg/wake/main/install.sh | bash</code>
+                <button class="copy" type="button" data-copy="curl -fsSL https://raw.githubusercontent.com/amiralibg/wake/main/install.sh | bash" aria-label="Copy command" aria-describedby="copy-status">
+                  <span class="idle">Copy</span><span class="done" aria-hidden="true">Copied</span>
+                </button>
+              </div>
+              <span id="copy-status" role="status" class="sr-only"></span>
             </div>
           </li>
           <li data-reveal style="--i: 1">
             <div>
-              <h3>Clear the quarantine flag, once</h3>
-              <p>Wake isn't signed with an Apple Developer ID yet, so macOS blocks a downloaded copy with "can't be opened" or "is damaged". This command removes the flag macOS puts on downloaded files.</p>
+              <h3>Or use the disk image</h3>
+              <p>Open <code>Wake.dmg</code> and drag Wake into Applications. Then clear the flag macOS puts on downloaded files, once:</p>
               <div class="code">
                 <code>xattr -cr /Applications/Wake.app</code>
                 <button class="copy" type="button" data-copy="xattr -cr /Applications/Wake.app" aria-label="Copy command" aria-describedby="copy-status">
@@ -325,7 +339,6 @@
                 </button>
               </div>
               <p class="muted" style="font-size: var(--t-small)">Rather not use Terminal? Try to open Wake, then choose Open Anyway in System Settings › Privacy &amp; Security.</p>
-              <span id="copy-status" role="status" class="sr-only"></span>
             </div>
           </li>
           <li data-reveal style="--i: 2">

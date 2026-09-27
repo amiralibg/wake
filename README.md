@@ -53,15 +53,31 @@ The app icon (a page leaving a wake of itself) is drawn in code; to regenerate i
 
 Wake is in **beta** (every 0.x release): expect rough edges, and please report what you find in [Issues](https://github.com/amiralibg/wake/issues).
 
-Download the latest `.dmg` from [Releases](https://github.com/amiralibg/wake/releases/latest). Wake checks for updates once a day (Wake ▸ Check for Updates… or Settings ▸ General) and installs them when you say so.
+Wake isn't signed with an Apple Developer ID yet, so macOS blocks a copy downloaded in a browser. The easiest way around that is to install from Terminal, with [Homebrew](https://brew.sh):
 
-Wake isn't signed with an Apple Developer ID yet, so macOS blocks a downloaded copy ("can't be opened" or "is damaged"). After dragging Wake to Applications, run this once in Terminal:
+```bash
+brew install --cask amiralibg/wake/wake
+```
+
+or without it:
+
+```bash
+curl -fsSL https://raw.githubusercontent.com/amiralibg/wake/main/install.sh | bash
+```
+
+Both put Wake in Applications, and it opens straight away.
+
+To use the disk image instead, download the latest `.dmg` from [Releases](https://github.com/amiralibg/wake/releases/latest) and drag Wake to Applications. macOS then refuses to open it ("can't be opened" or "is damaged") until you run this once:
 
 ```bash
 xattr -cr /Applications/Wake.app
 ```
 
-It removes the quarantine flag macOS puts on downloaded files; after that Wake opens normally. (Alternatively: try to open Wake, then choose **Open Anyway** in **System Settings ▸ Privacy & Security**.)
+It removes the quarantine flag macOS puts on downloaded files. Alternatively, try to open Wake, then choose **Open Anyway** in **System Settings ▸ Privacy & Security**. (On macOS 15 and later, Control-clicking the app and choosing Open no longer gets past this.)
+
+Wake checks for updates once a day (Wake ▸ Check for Updates… or Settings ▸ General) and installs them when you say so. Updates don't need any of the above again.
+
+If Wake 0.2.1 or earlier says "Wake cannot be opened because of a problem" or quits right after launching, install the latest version with one of the commands above. Those builds were signed in a way that some Macs refuse to load. If something else goes wrong, please open an [issue](https://github.com/amiralibg/wake/issues) rather than choosing Report… in the macOS dialog: those reports go to Apple, not to Wake.
 
 ## Releasing
 
@@ -81,7 +97,21 @@ git tag v0.1.0 && git push origin v0.1.0
 
 The workflow builds a Release app with that version, signs it, packages a `.zip` (for updates) and a `.dmg` (for downloads), signs the zip for Sparkle, writes release notes from the commits, and attaches `appcast.xml` to the release.
 
-To sign with a Developer ID and notarize, also add `DEVELOPER_ID_CERTIFICATE` (a base64 `.p12`), `DEVELOPER_ID_CERTIFICATE_PASSWORD`, `APPLE_TEAM_ID`, `APPLE_ID` and `APPLE_APP_PASSWORD`. Without them the app is signed ad hoc, which works but makes macOS ask before first launch.
+Without a Developer ID, releases are signed with a self-signed certificate. macOS doesn't trust it (so Gatekeeper still asks before the first launch of a browser download), but every release has the same identity, so macOS keeps Wake's data, keychain items and privacy permissions across updates. Make it once and add it as secrets:
+
+```bash
+Scripts/make-signing-certificate.sh
+base64 -i ~/.wake-release/signing-certificate.p12 | gh secret set SELF_SIGNED_CERTIFICATE
+gh secret set SELF_SIGNED_CERTIFICATE_PASSWORD < ~/.wake-release/signing-certificate-password
+```
+
+Keep the `.p12`: a new certificate is a new identity. Without these secrets the app is signed ad hoc, which also works but has a different identity on every build.
+
+These builds must not use hardened runtime. It turns on library validation, which only loads frameworks signed by the app's own Team ID; ad hoc and self-signed code has none, so macOS refuses Sparkle and Wake dies at launch. The workflow signs them without it and fails the release if it's still on.
+
+To sign with a Developer ID and notarize, add `DEVELOPER_ID_CERTIFICATE` (a base64 `.p12`), `DEVELOPER_ID_CERTIFICATE_PASSWORD`, `APPLE_TEAM_ID`, `APPLE_ID` and `APPLE_APP_PASSWORD`. That build uses hardened runtime and opens without any prompt.
+
+The Homebrew cask lives in [amiralibg/homebrew-wake](https://github.com/amiralibg/homebrew-wake) and moves to each new release on its own, within three hours.
 
 ## Layout
 
