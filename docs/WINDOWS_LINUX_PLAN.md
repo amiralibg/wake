@@ -1,6 +1,6 @@
 # Wake for Windows and Linux: plan
 
-Status: not started. Branch `windows-linux` (local only for now).
+Status: Phase 1 done (2026-09-28). Phase 0 next. Branch `windows-linux` (local only for now).
 
 Read `HANDOFF.md` first for how the macOS app is built. This plan covers a second app for Windows and Linux that shares Wake's design, data model and page-side JavaScript with the Mac app. The macOS app stays Swift and keeps shipping from `main`.
 
@@ -66,6 +66,8 @@ Known risks: Tauri's multiwebview is still behind `unstable` with open positioni
 - Syntax-check every script in CI (`node --check`).
 
 **Gate:** the Mac app builds without warnings and behaves as before (links, scroll sync, Moments, Pop Out, live chips, DevTools); no JS left in Swift strings except tiny one-liners.
+
+**Done (2026-09-28).** 23 scripts in `shared/scripts`, loaded by `Wake/Support/SharedScript.swift`; format in `shared/README.md`. The prelude became function parameters rather than a global: each file is a function body of `(wake, params)`, so page-world scripts don't add a `__wake` global to the page. `Scripts/script-tests/run.sh` runs all of them in a WKWebView through `SharedScript` and checks what they post and return (35 checks; scroll-sync's report is skipped when the test window isn't visible, since WebKit pauses requestAnimationFrame). `moment-restore.js` gained a text-walk fallback for engines without `window.find` (Chromium). Not yet checked by hand in the running app with computer use.
 
 Note: WebKit content worlds. The Mac app runs Wake's scripts in `WKContentWorld.defaultClient` and developer hooks in `.page`. WebKitGTK has script worlds (`webkit_user_script_new_for_world`). WebView2 has no isolated worlds for injected scripts, so on Windows Wake's scripts share the page's world: keep their globals namespaced under `__wake` and don't trust page-set values.
 

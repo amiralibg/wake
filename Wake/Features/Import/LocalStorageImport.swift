@@ -121,13 +121,11 @@ final class LocalStorageWriter: NSObject, WKNavigationDelegate {
             webView.loadSimulatedRequest(URLRequest(url: url), responseHTML: "<!doctype html><meta charset=utf-8>")
         }
         guard loaded else { return 0 }
-        let result = try? await webView.callAsyncJavaScript("""
-            let written = 0;
-            for (const [key, value] of items) {
-              try { if (localStorage.getItem(key) === null) { localStorage.setItem(key, value); written++; } } catch (e) { break; }
-            }
-            return written;
-            """, arguments: ["items": items.map { [$0.key, $0.value] }], contentWorld: .defaultClient)
+        let result = try? await webView.callAsyncJavaScript(
+            SharedScript.localStorageWrite.asyncBody,
+            arguments: ["params": ["items": items.map { [$0.key, $0.value] }]],
+            contentWorld: .defaultClient
+        )
         return (result as? Int) ?? 0
     }
 

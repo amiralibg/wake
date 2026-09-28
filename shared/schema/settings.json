@@ -1,0 +1,35 @@
+{
+  "$comment": "Wake's preferences: the macOS app's UserDefaults keys, with their types and defaults. The desktop apps keep the same keys in settings.json in their data folder.",
+  "appearance.theme": { "type": "enum", "values": ["light", "dark", "auto"], "default": "auto" },
+  "appearance.accent": { "type": "enum", "values": ["blue", "purple", "pink", "orange", "green", "teal", "graphite"], "default": "blue" },
+  "appearance.glass": { "type": "enum", "values": ["subtle", "balanced", "clear"], "default": "balanced" },
+  "appearance.gap": { "type": "number", "presets": { "none": 0, "tight": 8, "balanced": 14, "roomy": 24 }, "default": 14 },
+  "appearance.cornerRadius": { "type": "number", "default": 12 },
+  "appearance.pageWidth": { "type": "enum", "values": ["narrow", "balanced", "wide"], "default": "balanced", "$comment": "Columns per screen: narrow 3, balanced 2, wide 1.5." },
+
+  "browsing.linksInNewColumn": { "type": "bool", "default": true },
+  "browsing.restoreThread": { "type": "bool", "default": true },
+  "browsing.capsuleHides": { "type": "bool", "default": false },
+  "browsing.shiftScrollColumns": { "type": "bool", "default": true },
+  "browsing.columnModeKey": { "type": "bool", "default": true },
+
+  "search.engine": { "type": "enum", "values": ["duckDuckGo", "google", "brave", "bing", "ecosia", "startpage", "kagi", "perplexity", "yahoo", "custom"], "default": "duckDuckGo" },
+  "search.customTemplate": { "type": "string", "default": "", "$comment": "Results URL with %s for the query." },
+  "search.suggestions": { "type": "bool", "default": true },
+
+  "deck.sinkAfter": { "type": "enum", "values": ["threeDays", "sevenDays", "fourteenDays", "never"], "default": "sevenDays" },
+  "deck.keepActiveAfloat": { "type": "bool", "default": true },
+  "deck.peekFromEdge": { "type": "bool", "default": true },
+
+  "developer.editor": { "type": "enum", "values": ["cursor", "vscode", "zed", "xcode"], "default": "cursor", "$comment": "xcode is macOS only." },
+  "developer.autoLocalhost": { "type": "bool", "default": true },
+  "developer.scanPorts": { "type": "bool", "default": true },
+  "developer.webInspector": { "type": "bool", "default": true },
+
+  "devtools.widthFraction": { "type": "number", "default": 0, "$comment": "0 = not dragged yet: open at 480 px of the stage, clamped to 40–60 %." },
+  "devtools.console.timestamps": { "type": "bool", "default": false },
+  "devtools.elements.computedAll": { "type": "bool", "default": false },
+  "devtools.elements.detailTab": { "type": "string", "default": "styles" },
+
+  "window.zen": { "type": "bool", "default": false }
+}
