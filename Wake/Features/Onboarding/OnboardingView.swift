@@ -1,7 +1,7 @@
 import SwiftUI
 
-/// First-launch welcome: what the trail is, how Wake should look, where searches go,
-/// and the shortcuts worth knowing. Choices apply live and are the real settings.
+/// First-launch welcome: bringing your old browser's data over, what the trail is, how
+/// Wake should look, where searches go, and the shortcuts worth knowing. Choices apply live and are the real settings.
 /// Shown again from Settings ▸ General ▸ Welcome tour.
 struct OnboardingView: View {
     static let completedKey = "onboarding.completed"
@@ -11,10 +11,11 @@ struct OnboardingView: View {
     @Environment(AppearanceSettings.self) private var appearance
     @State private var step: Step = .welcome
     @State private var isForward = true
+    @State private var imports = OnboardingImport()
     @FocusState private var isFocused: Bool
 
     enum Step: Int, CaseIterable {
-        case welcome, trail, look, search, shortcuts, ready
+        case welcome, browsers, trail, look, search, shortcuts, ready
 
         var progress: Double { Double(rawValue) / Double(Self.allCases.count - 1) }
     }
@@ -77,11 +78,12 @@ struct OnboardingView: View {
     @ViewBuilder private var content: some View {
         switch step {
         case .welcome: WelcomeStep()
+        case .browsers: ImportStep(imports: imports)
         case .trail: TrailStep()
         case .look: LookStep()
         case .search: SearchStep()
         case .shortcuts: ShortcutsStep()
-        case .ready: ReadyStep()
+        case .ready: ReadyStep(imports: imports)
         }
     }
 
@@ -98,6 +100,15 @@ struct OnboardingView: View {
             Spacer()
             ProgressDots(step: step) { target in go(to: target) }
             Spacer()
+            if step == .browsers, imports.canStart {
+                Button("Not now") { go(to: .trail) }
+                    .buttonStyle(.plain)
+                    .font(.system(size: 14, weight: .medium))
+                    .foregroundStyle(.white.opacity(0.6))
+                    .frame(minHeight: 44)
+                    .contentShape(.rect)
+                    .transition(.opacity)
+            }
             Button(action: advance) {
                 Text(primaryTitle)
                     .font(.system(size: 14, weight: .semibold))
@@ -108,20 +119,26 @@ struct OnboardingView: View {
                     .contentShape(Capsule())
             }
             .buttonStyle(PressableStyle())
-            .help("Continue (↩)")
+            .help(primaryTitle + " (↩)")
         }
+        .animation(.chrome, value: primaryTitle)
         .frame(maxWidth: 720)
     }
 
     private var primaryTitle: String {
         switch step {
         case .welcome: "Get started"
+        case .browsers where imports.canStart: "Import"
         case .ready: "Start browsing"
         default: "Continue"
         }
     }
 
     private func advance() {
+        if step == .browsers, imports.canStart {
+            imports.start()
+            return
+        }
         guard let next = Step(rawValue: step.rawValue + 1) else {
             onFinish()
             return
@@ -198,7 +215,7 @@ private struct ProgressDots: View {
 // MARK: Steps
 
 /// Shared layout: an eyebrow, a big headline, a line of body copy, then the step's own content.
-private struct StepLayout<Content: View>: View {
+struct StepLayout<Content: View>: View {
     let eyebrow: String
     let title: String
     let detail: String
@@ -583,6 +600,7 @@ private struct Keycap: View {
 }
 
 private struct ReadyStep: View {
+    let imports: OnboardingImport
     @Environment(BrowsingSettings.self) private var browsing
     @Environment(AppearanceSettings.self) private var appearance
 
@@ -600,7 +618,7 @@ private struct ReadyStep: View {
             .frame(height: 220)
             VStack(spacing: 14) {
                 RevealText(text: "You’re all set.", size: 64, weight: .bold, delay: 0.2)
-                Text("\(browsing.searchName) for search, \(appearance.theme == .auto ? "matching your Mac" : appearance.theme.label.lowercased() + " mode"), and a trail that remembers where you've been. Press ↩ to start.")
+                Text("\(browsing.searchName) for search, \(appearance.theme == .auto ? "matching your Mac" : appearance.theme.label.lowercased() + " mode"), and a trail that remembers where you've been.\(importedNote) Press ↩ to start.")
                     .font(.system(size: 15))
                     .foregroundStyle(.white.opacity(0.62))
                     .multilineTextAlignment(.center)
@@ -609,6 +627,11 @@ private struct ReadyStep: View {
                     .arrive(after: 0.55)
             }
         }
+    }
+
+    private var importedNote: String {
+        guard let report = imports.report, report.pages > 0, let source = imports.source else { return "" }
+        return " Your \(source) history is waiting in ⌘Y."
     }
 }
 
