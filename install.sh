@@ -43,7 +43,7 @@ VERSION=$(printf '%s' "$APPCAST" | sed -n 's/.*<sparkle:shortVersionString>\(.*\
 WORK=$(mktemp -d)
 trap 'rm -rf "$WORK"' EXIT
 
-echo "Downloading Wake $VERSION…"
+echo "Downloading Wake ${VERSION}…"
 curl -fL --progress-bar -o "$WORK/Wake.zip" "$URL" || fail "The download failed."
 ditto -x -k "$WORK/Wake.zip" "$WORK" || fail "The download is damaged."
 [ -d "$WORK/Wake.app" ] || fail "The download doesn't contain Wake.app."
