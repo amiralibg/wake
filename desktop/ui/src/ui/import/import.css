@@ -1,0 +1,88 @@
+.browser-mark {
+  display: inline-grid;
+  place-items: center;
+  flex: none;
+  border-radius: 50%;
+  color: #fff;
+  font-weight: 700;
+  line-height: 1;
+  box-shadow: inset 0 0 0 0.5px rgba(0, 0, 0, 0.15);
+}
+
+.import-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 60;
+  display: grid;
+  place-items: center;
+  background: rgba(0, 0, 0, 0.18);
+  opacity: 0;
+  transition: opacity 200ms var(--spring);
+}
+.import-backdrop.is-visible { opacity: 1; }
+
+.import-sheet {
+  width: min(500px, calc(100vw - 32px));
+  max-height: calc(100vh - 64px);
+  overflow: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  padding: 20px;
+  border-radius: 14px;
+  background: var(--panel);
+  box-shadow: var(--shadow-panel);
+  transform: translateY(8px) scale(0.98);
+  transition: transform 260ms var(--spring);
+}
+.import-backdrop.is-visible .import-sheet { transform: none; }
+.import-sheet h2 { margin: 0 0 3px; font-size: 15px; font-weight: 600; }
+.import-sheet p { margin: 0; font-size: 13px; }
+
+.import-profiles {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: 4px;
+  border-radius: 10px;
+  background: var(--fill);
+  max-height: 220px;
+  overflow: auto;
+}
+.import-profile {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  height: 36px;
+  padding: 0 10px;
+  border: 0;
+  border-radius: 7px;
+  background: transparent;
+  color: var(--text);
+  font: inherit;
+  font-size: 13px;
+  text-align: left;
+  cursor: default;
+}
+.import-profile:hover { background: var(--fill-hover); }
+.import-profile.is-selected { background: var(--fill-2); }
+.import-profile-title { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.import-empty { padding: 12px; font-size: 13px; text-align: center; }
+.accent { color: var(--accent); }
+
+.import-options { display: flex; flex-direction: column; gap: 8px; font-size: 13px; }
+.import-option { display: flex; align-items: flex-start; gap: 8px; }
+.import-option input { margin: 2px 0 0; accent-color: var(--accent); }
+.import-option > span { display: flex; flex-direction: column; gap: 1px; }
+.import-option-detail { font-size: 11px; }
+
+.import-buttons { display: flex; align-items: center; gap: 8px; }
+.import-buttons .spacer { flex: 1; }
+
+.import-progress { display: flex; align-items: center; gap: 10px; height: 60px; font-size: 13px; }
+.import-summary { display: flex; flex-direction: column; gap: 6px; font-size: 13px; }
+.import-summary > div { display: flex; align-items: center; gap: 8px; }
+.import-note { display: flex; align-items: flex-start; gap: 8px; font-size: 13px; }
+.import-note svg { flex: none; margin-top: 2px; }
+
+.spin { animation: spin 0.9s linear infinite; }

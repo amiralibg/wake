@@ -1,0 +1,70 @@
+.window {
+  position: fixed;
+  inset: 0;
+  overflow: hidden;
+}
+
+/* The window glass: Windows and Linux have no reliable behind-window blur, so
+   it's a soft tinted surface with light from the top-left. */
+.backdrop {
+  position: absolute;
+  inset: 0;
+  background:
+    radial-gradient(1200px 700px at 0% 0%, color-mix(in srgb, var(--accent) 7%, transparent), transparent 60%),
+    radial-gradient(900px 600px at 100% 100%, color-mix(in srgb, var(--accent) 4%, transparent), transparent 60%),
+    linear-gradient(180deg, var(--window-tint-1), var(--window-tint-2));
+}
+
+.window.is-inactive .backdrop {
+  filter: saturate(0.6);
+}
+
+.window-content {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+.toolbar-slot {
+  flex: none;
+  height: 0;
+  opacity: 0;
+  transform: translateY(-20px);
+  transition: height var(--t-chrome), opacity var(--t-chrome), transform var(--t-chrome);
+}
+
+.toolbar-slot.is-visible {
+  height: 56px;
+  opacity: 1;
+  transform: none;
+}
+
+.resize-edge {
+  position: fixed;
+  z-index: 2000;
+}
+.resize-n { top: 0; left: 8px; right: 8px; height: 4px; cursor: ns-resize; }
+.resize-s { bottom: 0; left: 8px; right: 8px; height: 4px; cursor: ns-resize; }
+.resize-e { right: 0; top: 8px; bottom: 8px; width: 4px; cursor: ew-resize; }
+.resize-w { left: 0; top: 8px; bottom: 8px; width: 4px; cursor: ew-resize; }
+.resize-ne { top: 0; right: 0; width: 8px; height: 8px; cursor: nesw-resize; }
+.resize-nw { top: 0; left: 0; width: 8px; height: 8px; cursor: nwse-resize; }
+.resize-se { bottom: 0; right: 0; width: 8px; height: 8px; cursor: nwse-resize; }
+.resize-sw { bottom: 0; left: 0; width: 8px; height: 8px; cursor: nesw-resize; }
+
+/* Islands that float at the bottom (column mode, save moment, toasts). */
+.bottom-island {
+  position: fixed;
+  left: 50%;
+  bottom: 30px;
+  z-index: 70;
+  transform: translate(-50%, 12px) scale(0.94);
+  opacity: 0;
+  transition: opacity var(--t-chrome), transform var(--t-chrome);
+}
+
+.bottom-island.is-visible {
+  opacity: 1;
+  transform: translate(-50%, 0);
+}

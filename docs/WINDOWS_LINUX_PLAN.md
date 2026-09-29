@@ -114,6 +114,30 @@ In this order, each one behind its own PR into this branch:
 - Keyboard: ⌘ becomes Ctrl, so check every Mac shortcut for clashes with Windows/Linux conventions (Ctrl+W, Ctrl+D, Ctrl+K in some layouts).
 - Sync between the Mac and desktop apps, later: the shared schema keeps it possible, but it isn't in scope.
 
+## Progress
+
+- [x] Host: window, shell webview, page webviews, IPC, SQLite, settings
+- [x] UI: trail + geometry + resizing, page cards, snapshot cover
+- [x] Toolbar, palette, search engines, suggestions
+- [x] Threads + persistence, history + searches
+- [x] Settings panel (all sections)
+- [x] Deck, Moments (+ watcher), live chips
+- [x] Pinned apps, Zen + edge reveal, column mode
+- [x] Developer mode + DevTools column
+- [x] Updates (host side; needs a signing key and release assets)
+- [x] Pop Out window
+- [x] Onboarding (WebGL water)
+- [x] Import from other browsers (Chromium + Firefox families)
+- [x] Packaging + CI (AppImage verified on a clean system; NSIS installer compiles)
+- [x] Docs: desktop/README.md, shared/README.md, HANDOFF.md
+- [ ] Run on real Windows (only cross-compiled so far) and on a Linux desktop with a GPU
+- [ ] First release: minisign key (secret + variable), then a tag
+
 ## Spike results
 
-_Fill in after Phase 0._
+Phase 0 was folded into the real host instead of a throwaway spike (2026-09-28):
+
+- **Layer: wry + tao directly**, not Tauri. wry 0.57 already has what Tauri's multiwebview would add (child webviews, popups with `window.opener` through `NewWindowResponse::Create`, back/forward, cookies, page-load events), and the native handles (`WebViewExtUnix::webview`, `WebViewExtWindows::controller`) cover the rest: script worlds, snapshots, key interception, progress.
+- **Linux uses WebKitGTK 4.1 (GTK3)**, not 6.0: that is the API wry is built on.
+- **No transparent overlay over pages.** The chrome is one full-window "shell" webview *under* the page webviews. When something must draw over pages (Deck, palette, menus, Zen toolbar), the covered pages are snapshotted and hidden, and the shell draws the snapshots in their place. WebView2 in windowed mode can't show a sibling webview through its transparent pixels, so a floating transparent chrome webview isn't portable.
+- **App logic lives in the UI (TypeScript)**; the host is a thin service layer (webviews, storage, OS). See `desktop/README.md`.

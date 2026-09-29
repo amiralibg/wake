@@ -38,7 +38,7 @@ You're continuing work on **Wake**, a macOS browser I'm building with you, one s
 - Code editing sheets use `CodeTextEditor` (NSTextView without smart quotes/dashes/completion); SwiftUI's `TextEditor` corrupts JSON and HTML.
 
 ## Status
-- Windows/Linux: a second app is planned on branch `windows-linux` (`docs/WINDOWS_LINUX_PLAN.md`). Phase 1 (shared scripts and schema) is done there.
+- Windows/Linux: a second app on branch `windows-linux` (local only), in `desktop/`: a Rust host (wry + tao) and a TypeScript/React/MobX UI with every feature of the Mac app; see `desktop/README.md` and the progress list in `docs/WINDOWS_LINUX_PLAN.md`. Tested on Linux in the Docker dev container; Windows is cross-compiled but hasn't run on Windows yet.
 - Steps 1–9 are built:
   1. Shell, glass, toolbar, ⌘K
   2. Trail

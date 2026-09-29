@@ -1,0 +1,162 @@
+# Builds Wake for Windows and Linux and attaches it to the GitHub release that
+# release.yml (the macOS app) publishes for the same tag:
+#   Wake-<version>-windows-x64-setup.exe   (NSIS, per-user)
+#   Wake-<version>-linux-x86_64.AppImage
+#   Wake-<version>-linux-aarch64.AppImage
+# each with a minisign signature (.minisig) that the in-app updater checks.
+#
+# It never creates the release itself: the macOS updater reads
+# releases/latest/download/appcast.xml, so the release must appear with the
+# appcast (release.yml publishes both). This workflow waits for it, then uploads.
+#
+# Setup (once):
+#   minisign -G -W -p wake-update.pub -s wake-update.key    (no password: CI signs unattended)
+#   Secret   WAKE_MINISIGN_KEY        the contents of wake-update.key
+#   Variable WAKE_UPDATE_PUBLIC_KEY   the second line of wake-update.pub (built into the app)
+# Without them the packages are still built and published, with updates off.
+name: Desktop release
+
+on:
+  push:
+    tags: ["v*.*.*"]
+  workflow_dispatch:
+    inputs:
+      version:
+        description: "Version to build for an existing release, e.g. 0.2.3"
+        required: true
+
+permissions:
+  contents: write
+
+env:
+  RAW_VERSION: ${{ github.event.inputs.version || github.ref_name }}
+  WAKE_UPDATE_PUBLIC_KEY: ${{ vars.WAKE_UPDATE_PUBLIC_KEY }}
+
+jobs:
+  ui:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: desktop/ui/package-lock.json
+      - name: Build the UI
+        working-directory: desktop/ui
+        run: |
+          npm ci
+          npm run build
+      - uses: actions/upload-artifact@v4
+        with:
+          name: ui
+          path: desktop/ui/dist
+
+  linux:
+    needs: ui
+    strategy:
+      matrix:
+        include:
+          - runner: ubuntu-22.04
+            arch: x86_64
+          - runner: ubuntu-22.04-arm
+            arch: aarch64
+    # The oldest supported Ubuntu: the AppImage uses the build machine's glibc.
+    runs-on: ${{ matrix.runner }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/download-artifact@v4
+        with:
+          name: ui
+          path: desktop/ui/dist
+      - name: Set the version
+        shell: bash
+        run: |
+          VERSION="${RAW_VERSION#v}"
+          [[ "$VERSION" =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]] || { echo "::error::'$RAW_VERSION' isn't a version like 0.1.0"; exit 1; }
+          sed -i "0,/^version = .*/s//version = \"$VERSION\"/" desktop/host/Cargo.toml
+      - name: Install WebKitGTK and packaging tools
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y libwebkit2gtk-4.1-dev libgtk-3-dev libsoup-3.0-dev file desktop-file-utils
+      - uses: dtolnay/rust-toolchain@stable
+      - name: Build
+        working-directory: desktop/host
+        run: cargo build --release
+      - name: Package the AppImage
+        run: desktop/packaging/linux/build-appimage.sh "$PWD/dist"
+      - uses: actions/upload-artifact@v4
+        with:
+          name: linux-${{ matrix.arch }}
+          path: dist/*.AppImage
+
+  windows:
+    needs: ui
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/download-artifact@v4
+        with:
+          name: ui
+          path: desktop/ui/dist
+      - name: Set the version
+        shell: bash
+        run: |
+          VERSION="${RAW_VERSION#v}"
+          [[ "$VERSION" =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]] || { echo "::error::'$RAW_VERSION' isn't a version like 0.1.0"; exit 1; }
+          sed -i "0,/^version = .*/s//version = \"$VERSION\"/" desktop/host/Cargo.toml
+          echo "VERSION=$VERSION" >> "$GITHUB_ENV"
+      - uses: dtolnay/rust-toolchain@stable
+      - name: Build
+        working-directory: desktop/host
+        run: cargo build --release
+      - name: Package the installer
+        shell: bash
+        run: |
+          # Microsoft's WebView2 bootstrapper, for Windows 10 machines without it.
+          curl -fsSL "https://go.microsoft.com/fwlink/p/?LinkId=2124703" -o desktop/packaging/windows/MicrosoftEdgeWebview2Setup.exe
+          command -v makensis >/dev/null || choco install nsis -y --no-progress
+          MAKENSIS=$(command -v makensis || echo "/c/Program Files (x86)/NSIS/makensis.exe")
+          mkdir -p dist
+          "$MAKENSIS" -DVERSION="$VERSION" -DBINARY="$(cygpath -w "$PWD/desktop/host/target/release/wake.exe")" \
+            -DOUTDIR="$(cygpath -w "$PWD/dist")" desktop/packaging/windows/wake.nsi
+      - uses: actions/upload-artifact@v4
+        with:
+          name: windows-x64
+          path: dist/*.exe
+
+  publish:
+    needs: [linux, windows]
+    runs-on: ubuntu-24.04
+    env:
+      GH_TOKEN: ${{ github.token }}
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          path: dist
+          merge-multiple: true
+      - name: Sign
+        env:
+          WAKE_MINISIGN_KEY: ${{ secrets.WAKE_MINISIGN_KEY }}
+        run: |
+          if [ -z "$WAKE_MINISIGN_KEY" ] || [ -z "$WAKE_UPDATE_PUBLIC_KEY" ]; then
+            echo "::warning::No WAKE_MINISIGN_KEY secret or WAKE_UPDATE_PUBLIC_KEY variable: publishing without update signatures (these builds can't update themselves)."
+            exit 0
+          fi
+          sudo apt-get update && sudo apt-get install -y minisign
+          printf '%s\n' "$WAKE_MINISIGN_KEY" > "$RUNNER_TEMP/wake.key"
+          for file in dist/*; do
+            minisign -S -s "$RUNNER_TEMP/wake.key" -m "$file" -t "Wake ${RAW_VERSION#v}"
+          done
+          rm "$RUNNER_TEMP/wake.key"
+          ls -la dist
+      - name: Attach to the release
+        run: |
+          TAG="v${RAW_VERSION#v}"
+          # release.yml publishes the release (with the macOS appcast); wait for it.
+          for attempt in $(seq 1 90); do
+            gh release view "$TAG" --repo "$GITHUB_REPOSITORY" > /dev/null 2>&1 && break
+            [ "$attempt" = 90 ] && { echo "::error::No release $TAG after 90 minutes: did release.yml fail?"; exit 1; }
+            sleep 60
+          done
+          gh release upload "$TAG" dist/* --repo "$GITHUB_REPOSITORY" --clobber

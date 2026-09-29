@@ -1,0 +1,98 @@
+# Builds Wake for Windows and Linux (desktop/) on every push and pull request,
+# fails on compiler warnings, and packages test builds (the run's artifacts): the
+# Windows installer and a Linux AppImage. The macOS app is build.yml; releases
+# are desktop-release.yml.
+name: Desktop
+
+on:
+  push:
+    branches: [main, windows-linux]
+  pull_request:
+
+jobs:
+  ui:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - name: Check the shared page scripts
+        run: node shared/check-scripts.mjs
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: desktop/ui/package-lock.json
+      - name: Type-check and build the UI
+        working-directory: desktop/ui
+        run: |
+          npm ci
+          npm run build
+      - uses: actions/upload-artifact@v4
+        with:
+          name: ui
+          path: desktop/ui/dist
+
+  linux:
+    needs: ui
+    runs-on: ubuntu-22.04
+    env:
+      RUSTFLAGS: -D warnings
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/download-artifact@v4
+        with:
+          name: ui
+          path: desktop/ui/dist
+      - name: Install WebKitGTK and packaging tools
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y libwebkit2gtk-4.1-dev libgtk-3-dev libsoup-3.0-dev file desktop-file-utils
+      - uses: dtolnay/rust-toolchain@stable
+      - uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: desktop/host
+      - name: Build and test
+        working-directory: desktop/host
+        run: |
+          cargo build --release
+          cargo test --release
+      - name: Package the AppImage
+        run: desktop/packaging/linux/build-appimage.sh "$PWD/dist"
+      - uses: actions/upload-artifact@v4
+        with:
+          name: wake-linux-x86_64
+          path: dist/*.AppImage
+
+  windows:
+    needs: ui
+    runs-on: windows-latest
+    env:
+      RUSTFLAGS: -D warnings
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/download-artifact@v4
+        with:
+          name: ui
+          path: desktop/ui/dist
+      - uses: dtolnay/rust-toolchain@stable
+      - uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: desktop/host
+      - name: Build and test
+        working-directory: desktop/host
+        run: |
+          cargo build --release
+          cargo test --release
+      - name: Package the installer
+        shell: bash
+        run: |
+          VERSION=$(sed -n 's/^version = "\(.*\)"/\1/p' desktop/host/Cargo.toml | head -1)
+          curl -fsSL "https://go.microsoft.com/fwlink/p/?LinkId=2124703" -o desktop/packaging/windows/MicrosoftEdgeWebview2Setup.exe
+          command -v makensis >/dev/null || [ -x "/c/Program Files (x86)/NSIS/makensis.exe" ] || choco install nsis -y --no-progress
+          MAKENSIS=$(command -v makensis || echo "/c/Program Files (x86)/NSIS/makensis.exe")
+          mkdir -p dist
+          "$MAKENSIS" -DVERSION="$VERSION" -DBINARY="$(cygpath -w "$PWD/desktop/host/target/release/wake.exe")" \
+            -DOUTDIR="$(cygpath -w "$PWD/dist")" desktop/packaging/windows/wake.nsi
+      - uses: actions/upload-artifact@v4
+        with:
+          name: wake-windows-x64
+          path: dist/*.exe

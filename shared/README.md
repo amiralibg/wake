@@ -39,6 +39,15 @@ On WebKit, Wake's own scripts run in an isolated content world (`WKContentWorld.
 | `dev-hooks.js`, `component-inspector.js` | page | `wakeDev` |
 | `devtools.js`, `async-devtools-*.js` | page | `wakeDT` |
 | `async-fetch-source.js`, `async-local-storage-write.js` | Wake | — |
+| `trail-wheel.js` (desktop only) | Wake | `wake` |
+
+`link-interceptor.js` takes an optional `backgroundKey`: `"meta"` (the default, ⌘-click on the Mac) or `"ctrl"` (Ctrl-click, which the desktop app passes). On the Mac, Control-click is a right click and is left alone.
+
+`trail-wheel.js` is desktop only: on the Mac, AppKit sees ⇧+wheel and horizontal swipes before the page does. It posts `trailStep` for ⇧+wheel and `trailPan`/`trailPanEnd` for horizontal scrolling the page can't use, and does nothing unless `window.__wake.trailWheel` is on.
+
+#### Getting values back on the desktop
+
+WebKitGTK and WebView2 can't await a script's result the way `callAsyncJavaScript` does, so the desktop host wraps a script that must return something and has the wrapper post `{ id, ok, value | error }` on a reply channel: `wakeReply` from Wake's world, `wakePageReply` from the page's (a WebKitGTK message handler belongs to one world).
 
 ### Checking
 

@@ -12,6 +12,7 @@ if (handlers) {
 const view = window.chrome && window.chrome.webview;
 return {
   post(channel, message) {
-    try { view.postMessage({ channel, message }); } catch (e) {}
+    // A string: the host reads it with TryGetWebMessageAsString.
+    try { view.postMessage(JSON.stringify({ channel, message })); } catch (e) {}
   },
 };

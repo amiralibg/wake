@@ -1,0 +1,10 @@
+[Desktop Entry]
+Type=Application
+Name=Wake
+GenericName=Web Browser
+Comment=A browser where every link opens as a column beside the page you came from
+Exec=wake
+Icon=wake
+Terminal=false
+Categories=Network;WebBrowser;
+StartupWMClass=wake

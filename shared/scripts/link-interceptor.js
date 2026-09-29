@@ -2,13 +2,16 @@
 // Capture phase on `window` runs before any page handler, which matters because
 // single-page apps (React Router, Next, Turbo…) otherwise swallow the click and
 // pushState, and the engine never sees a navigation.
-// ⌥-click navigates in place; ⌘-click opens the column without focusing it.
-// params: { channel }
+// ⌥-click navigates in place; ⌘-click (Ctrl-click on Windows and Linux) opens
+// the column without focusing it.
+// params: { channel, backgroundKey? ("meta" by default, or "ctrl") }
 window.__wake = window.__wake || {};
 window.addEventListener('click', (event) => {
   // The Pop Out picker is choosing an element: the click is its, not a link's.
   if (window.__wakePick) return;
-  if (event.button !== 0 || event.altKey || event.ctrlKey) return;
+  const ctrlOpensBackground = params.backgroundKey === 'ctrl';
+  // On the Mac, Control-click is a right click.
+  if (event.button !== 0 || event.altKey || (event.ctrlKey && !ctrlOpensBackground)) return;
   const anchor = event.composedPath().find(n => n instanceof HTMLAnchorElement || n instanceof SVGAElement);
   if (!anchor || anchor.hasAttribute('download')) return;
   const role = (anchor.getAttribute('role') || '').toLowerCase();
@@ -24,5 +27,5 @@ window.addEventListener('click', (event) => {
   if (url.origin === here.origin && url.pathname === here.pathname && url.search === here.search) return;
   event.preventDefault();
   event.stopImmediatePropagation();
-  wake.post(params.channel, { type: 'openLink', href: url.href, background: event.metaKey });
+  wake.post(params.channel, { type: 'openLink', href: url.href, background: ctrlOpensBackground ? event.ctrlKey : event.metaKey });
 }, true);
