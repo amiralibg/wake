@@ -136,8 +136,15 @@ jobs:
     env:
       GH_TOKEN: ${{ github.token }}
     steps:
+      # The packages only (the run's "ui" artifact is the UI bundle).
       - uses: actions/download-artifact@v4
         with:
+          pattern: linux-*
+          path: dist
+          merge-multiple: true
+      - uses: actions/download-artifact@v4
+        with:
+          pattern: windows-*
           path: dist
           merge-multiple: true
       - name: Sign
