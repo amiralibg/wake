@@ -1,0 +1,52 @@
+# The .deb and .rpm packages (built by build-packages.sh, which sets the
+# variables). They install Wake system-wide and use the distribution's own
+# WebKitGTK, unlike the AppImage, which carries one.
+name: wake
+arch: ${NFPM_ARCH}
+platform: linux
+version: ${WAKE_VERSION}
+release: "1"
+section: web
+priority: optional
+maintainer: Amirali Beigi <amiralibgi.dev@gmail.com>
+vendor: Amirali Beigi
+homepage: https://github.com/amiralibg/wake
+license: MIT
+description: |-
+  A browser where every link opens as a column beside the page you came from.
+  Pages stay in view as a trail instead of hiding in tabs, with threads, the
+  Deck, saved moments, Zen and a developer mode with DevTools.
+
+contents:
+  - src: ${WAKE_BIN} # filled in by build-packages.sh
+    dst: /usr/bin/wake
+    file_info:
+      mode: 0755
+  - src: desktop/packaging/linux/wake.desktop
+    dst: /usr/share/applications/wake.desktop
+  - src: desktop/packaging/icons/wake-256.png
+    dst: /usr/share/icons/hicolor/256x256/apps/wake.png
+  - src: desktop/packaging/icons/wake-512.png
+    dst: /usr/share/icons/hicolor/512x512/apps/wake.png
+  - src: LICENSE
+    dst: /usr/share/doc/wake/copyright
+    packager: deb
+  - src: LICENSE
+    dst: /usr/share/licenses/wake/LICENSE
+    packager: rpm
+
+overrides:
+  deb:
+    depends:
+      - libwebkit2gtk-4.1-0 (>= 2.40)
+      - libgtk-3-0
+    recommends:
+      # Audio and video in pages.
+      - gstreamer1.0-plugins-good
+      - gstreamer1.0-libav
+  rpm:
+    depends:
+      - webkit2gtk4.1 >= 2.40
+      - gtk3
+    recommends:
+      - gstreamer1-plugins-good

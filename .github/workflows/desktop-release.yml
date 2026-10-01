@@ -1,8 +1,8 @@
 # Builds Wake for Windows and Linux and attaches it to the GitHub release that
 # release.yml (the macOS app) publishes for the same tag:
 #   Wake-<version>-windows-x64-setup.exe   (NSIS, per-user)
-#   Wake-<version>-linux-x86_64.AppImage
-#   Wake-<version>-linux-aarch64.AppImage
+#   Wake-<version>-linux-x86_64.AppImage, .deb and .rpm
+#   Wake-<version>-linux-aarch64.AppImage, .deb and .rpm
 # each with a minisign signature (.minisig) that the in-app updater checks.
 #
 # It never creates the release itself: the macOS updater reads
@@ -83,12 +83,17 @@ jobs:
       - name: Build
         working-directory: desktop/host
         run: cargo build --release
-      - name: Package the AppImage
-        run: desktop/packaging/linux/build-appimage.sh "$PWD/dist"
+      - name: Package the AppImage, .deb and .rpm
+        run: |
+          desktop/packaging/linux/build-appimage.sh "$PWD/dist"
+          desktop/packaging/linux/build-packages.sh "$PWD/dist"
       - uses: actions/upload-artifact@v4
         with:
           name: linux-${{ matrix.arch }}
-          path: dist/*.AppImage
+          path: |
+            dist/*.AppImage
+            dist/*.deb
+            dist/*.rpm
 
   windows:
     needs: ui

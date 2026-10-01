@@ -1,8 +1,9 @@
 // Auto-update (the Mac app's AppUpdater.swift uses Sparkle). The host checks the
 // latest GitHub release, downloads this platform's package, verifies its Ed25519
 // signature against the key built into the app, and installs it: the NSIS
-// installer on Windows, the AppImage swapped in place on Linux. Other Linux
-// packages (deb, Flatpak) update through their package manager.
+// installer on Windows, the AppImage swapped in place on Linux. A .deb or .rpm
+// install gets the new package in Downloads, opened in the system's software
+// installer (it needs the user's password, which Wake doesn't ask for).
 
 import { makeAutoObservable, runInAction } from 'mobx';
 import { host } from '../host/host';
@@ -10,9 +11,11 @@ import { settings } from './settings';
 
 interface UpdateInfo {
   version: string;
-  /** False without a signing key, or when installed through a package manager. */
+  /** False without a signing key, or when Wake wasn't installed from one of its packages. */
   canUpdate: boolean;
   reason: string;
+  /** A .deb or .rpm: installing hands the package to the system instead of restarting. */
+  manual?: boolean;
 }
 
 interface Release {
@@ -30,6 +33,10 @@ class Updater {
   state: 'idle' | 'checking' | 'installing' = 'idle';
   available: Release | null = null;
   error: string | null = null;
+  /** The update is a .deb or .rpm the system installs (see `install`). */
+  isManual = false;
+  /** Set once a package was handed to the system's installer. */
+  handedOver = false;
 
   constructor() {
     makeAutoObservable(this);
@@ -53,6 +60,7 @@ class Updater {
       this.version = info?.version ?? '';
       this.isAvailable = !!info?.canUpdate;
       this.unavailableReason = info?.reason ?? 'Updates are off in this build.';
+      this.isManual = !!info?.manual;
     });
     if (this.isAvailable && this.automaticallyChecks && Date.now() - (this.lastChecked ?? 0) > DAY) {
       await this.check(false);
@@ -79,8 +87,15 @@ class Updater {
     if (!this.available) return;
     this.state = 'installing';
     try {
-      // The host restarts Wake once the new version is in place.
-      await host.call('update.install');
+      // The host restarts Wake once the new version is in place, or (for a .deb
+      // or .rpm) opens the downloaded package in the software installer.
+      const result = await host.call<{ restarts: boolean }>('update.install');
+      if (!result?.restarts) {
+        runInAction(() => {
+          this.handedOver = true;
+          this.state = 'idle';
+        });
+      }
     } catch (error) {
       runInAction(() => {
         this.error = String(error);

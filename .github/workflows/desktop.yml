@@ -1,6 +1,6 @@
 # Builds Wake for Windows and Linux (desktop/) on every push and pull request,
 # fails on compiler warnings, and packages test builds (the run's artifacts): the
-# Windows installer and a Linux AppImage. The macOS app is build.yml; releases
+# Windows installer and the Linux AppImage, .deb and .rpm. The macOS app is build.yml; releases
 # are desktop-release.yml.
 name: Desktop
 
@@ -55,12 +55,17 @@ jobs:
         run: |
           cargo build --release
           cargo test --release
-      - name: Package the AppImage
-        run: desktop/packaging/linux/build-appimage.sh "$PWD/dist"
+      - name: Package the AppImage, .deb and .rpm
+        run: |
+          desktop/packaging/linux/build-appimage.sh "$PWD/dist"
+          desktop/packaging/linux/build-packages.sh "$PWD/dist"
       - uses: actions/upload-artifact@v4
         with:
           name: wake-linux-x86_64
-          path: dist/*.AppImage
+          path: |
+            dist/*.AppImage
+            dist/*.deb
+            dist/*.rpm
 
   windows:
     needs: ui

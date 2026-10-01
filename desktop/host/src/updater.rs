@@ -5,8 +5,11 @@
 //! Release assets, per platform (made by `.github/workflows/desktop-release.yml`):
 //! - `Wake-<version>-windows-x64-setup.exe` (NSIS), installed silently
 //! - `Wake-<version>-linux-<arch>.AppImage`, swapped in place of the running one
-//! each with a `.minisig` beside it. Installs made any other way (a .deb, a
-//! Flatpak) update through their package manager.
+//! - `Wake-<version>-linux-<arch>.deb` / `.rpm`, downloaded and handed to the
+//!   system's software installer (they replace system files, which needs the
+//!   user's password; Wake doesn't ask for it itself)
+//! each with a `.minisig` beside it. A build installed any other way (from
+//! source) doesn't update itself.
 
 use serde_json::{json, Value};
 use std::io::Read;
@@ -28,17 +31,26 @@ fn install_kind() -> Result<&'static str, String> {
         return Ok("windows");
     }
     if cfg!(target_os = "linux") {
-        return match std::env::var_os("APPIMAGE") {
-            Some(_) => Ok("appimage"),
-            None => Err("Installed by a package manager: update Wake through it.".into()),
-        };
+        if std::env::var_os("APPIMAGE").is_some() {
+            return Ok("appimage");
+        }
+        // Installed from our .deb or .rpm (the package is named "wake").
+        if std::env::current_exe().is_ok_and(|exe| exe == Path::new("/usr/bin/wake")) {
+            if Path::new("/var/lib/dpkg/info/wake.list").exists() {
+                return Ok("deb");
+            }
+            if std::process::Command::new("rpm").args(["-q", "wake"]).output().is_ok_and(|o| o.status.success()) {
+                return Ok("rpm");
+            }
+        }
+        return Err("This copy wasn't installed from a Wake package, so it can't update itself.".into());
     }
     Err("Updates aren't supported on this platform.".into())
 }
 
 pub fn info() -> Value {
     match install_kind() {
-        Ok(_) => json!({ "version": version(), "canUpdate": true, "reason": "" }),
+        Ok(kind) => json!({ "version": version(), "canUpdate": true, "reason": "", "manual": !restarts(kind) }),
         Err(reason) => json!({ "version": version(), "canUpdate": false, "reason": reason }),
     }
 }
@@ -52,6 +64,8 @@ fn asset_name(version: &str) -> Option<String> {
     match install_kind().ok()? {
         "windows" => Some(format!("Wake-{version}-windows-x64-setup.exe")),
         "appimage" => Some(format!("Wake-{version}-linux-{arch}.AppImage")),
+        "deb" => Some(format!("Wake-{version}-linux-{arch}.deb")),
+        "rpm" => Some(format!("Wake-{version}-linux-{arch}.rpm")),
         _ => None,
     }
 }
@@ -127,9 +141,16 @@ fn download(url: &str, limit: u64) -> Result<Vec<u8>, String> {
     Ok(bytes)
 }
 
-/// Downloads, verifies and installs `update`, then starts the new version. On
-/// success the caller quits.
-pub fn install(update: &Available, data_dir: &Path) -> Result<(), String> {
+/// Whether installing an update restarts Wake by itself (else the user finishes
+/// it in their software installer).
+fn restarts(kind: &str) -> bool {
+    !matches!(kind, "deb" | "rpm")
+}
+
+/// Downloads, verifies and installs `update`. Returns whether the new version
+/// is starting (the caller then quits), or was handed to the system's software
+/// installer (Wake keeps running).
+pub fn install(update: &Available, data_dir: &Path) -> Result<bool, String> {
     let kind = install_kind()?;
     let key = minisign_verify::PublicKey::from_base64(PUBLIC_KEY.unwrap_or("").trim())
         .or_else(|_| minisign_verify::PublicKey::decode(PUBLIC_KEY.unwrap_or("").trim()))
@@ -143,8 +164,9 @@ pub fn install(update: &Available, data_dir: &Path) -> Result<(), String> {
     let folder = data_dir.join("updates");
     std::fs::create_dir_all(&folder).map_err(|e| e.to_string())?;
     match kind {
-        "windows" => install_windows(&package, &folder),
-        "appimage" => install_appimage(&package),
+        "windows" => install_windows(&package, &folder).map(|_| true),
+        "appimage" => install_appimage(&package).map(|_| true),
+        "deb" | "rpm" => hand_over_package(&package, &update.asset).map(|_| false),
         _ => Err("Can't update this install.".into()),
     }
 }
@@ -174,6 +196,18 @@ fn install_windows(package: &[u8], folder: &Path) -> Result<(), String> {
     }
     #[allow(unreachable_code)]
     Err(format!("not Windows: {script}"))
+}
+
+/// Saves a verified .deb or .rpm to Downloads and opens it, which on most
+/// desktops starts the software installer (GNOME Software, Discover, App Center).
+fn hand_over_package(package: &[u8], url: &str) -> Result<(), String> {
+    let name = url.rsplit('/').next().unwrap_or("wake-update");
+    let path = crate::page::downloads_dir().join(name);
+    std::fs::write(&path, package).map_err(|e| format!("Can't save the update to {}: {e}", path.display()))?;
+    if open::that(&path).is_err() {
+        return Err(format!("Saved the update to {}: open it to install.", path.display()));
+    }
+    Ok(())
 }
 
 fn install_appimage(package: &[u8]) -> Result<(), String> {

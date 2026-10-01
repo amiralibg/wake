@@ -131,7 +131,8 @@ In this order, each one behind its own PR into this branch:
 - [x] Packaging + CI (AppImage verified on a clean system; NSIS installer compiles)
 - [x] Docs: desktop/README.md, shared/README.md, HANDOFF.md
 - [ ] Run on real Windows (only cross-compiled so far) and on a Linux desktop with a GPU
-- [ ] First release: minisign key (secret + variable), then a tag
+- [x] First release: minisign key (secret + variable), then a tag (v0.3.0)
+- [x] .deb and .rpm packages beside the AppImage
 
 ## Spike results
 

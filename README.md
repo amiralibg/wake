@@ -95,15 +95,21 @@ Download `Wake-<version>-windows-x64-setup.exe` from [Releases](https://github.c
 
 ### Linux
 
-Download `Wake-<version>-linux-x86_64.AppImage` (or `-aarch64`) from [Releases](https://github.com/amiralibg/wake/releases/latest), make it executable and run it:
+Three ways, all on [Releases](https://github.com/amiralibg/wake/releases/latest), for x86_64 and ARM64:
 
-```bash
-chmod +x Wake-*.AppImage && ./Wake-*.AppImage
-```
+- **Debian, Ubuntu, Mint, Pop!_OS:** `Wake-<version>-linux-x86_64.deb`. Install it with `sudo apt install ./Wake-*.deb`, which also brings in WebKitGTK.
+- **Fedora, openSUSE, RHEL:** `Wake-<version>-linux-x86_64.rpm`. Install it with `sudo dnf install ./Wake-*.rpm` (or `zypper install`).
+- **Anything else:** `Wake-<version>-linux-x86_64.AppImage`, one file with WebKitGTK inside. Make it executable and run it:
 
-It runs on distributions from 2022 on (Ubuntu 22.04 or later, or anything with glibc 2.35+). If it doesn't start, your system may lack FUSE: install `libfuse2`, or run it with `APPIMAGE_EXTRACT_AND_RUN=1`.
+  ```bash
+  chmod +x Wake-*.AppImage && ./Wake-*.AppImage
+  ```
 
-Both update themselves: Wake checks once a day and installs a new version when you say so.
+  If it doesn't start, your system may lack FUSE: install `libfuse2`, or run it with `APPIMAGE_EXTRACT_AND_RUN=1`.
+
+They run on distributions from 2022 on (Ubuntu 22.04, Debian 12, Fedora 36 or later). The packages need WebKitGTK 4.1, version 2.40 or later.
+
+Both update themselves: Wake checks once a day and installs a new version when you say so. On Linux, the AppImage replaces itself; a .deb or .rpm install downloads the new package and opens it in your software installer, which asks for your password.
 
 ## Releasing
 
@@ -139,7 +145,7 @@ To sign with a Developer ID and notarize, add `DEVELOPER_ID_CERTIFICATE` (a base
 
 The Homebrew cask lives in [amiralibg/homebrew-wake](https://github.com/amiralibg/homebrew-wake) and moves to each new release on its own, within three hours.
 
-The same tag also runs `.github/workflows/desktop-release.yml`, which builds the Windows installer and the Linux AppImages, signs them with [minisign](https://jedisct1.github.io/minisign/) for the in-app updater, and attaches them to the release once `release.yml` has published it. One-time setup: make a key with `minisign -G -W`, add the secret key file's contents as the secret `WAKE_MINISIGN_KEY`, and the public key (the second line of the `.pub` file) as the repository variable `WAKE_UPDATE_PUBLIC_KEY`. Without them the packages are still published, but can't update themselves.
+The same tag also runs `.github/workflows/desktop-release.yml`, which builds the Windows installer and the Linux AppImages, .deb and .rpm packages, signs them with [minisign](https://jedisct1.github.io/minisign/) for the in-app updater, and attaches them to the release once `release.yml` has published it. One-time setup: make a key with `minisign -G -W`, add the secret key file's contents as the secret `WAKE_MINISIGN_KEY`, and the public key (the second line of the `.pub` file) as the repository variable `WAKE_UPDATE_PUBLIC_KEY`. Without them the packages are still published, but can't update themselves.
 
 ## Layout
 

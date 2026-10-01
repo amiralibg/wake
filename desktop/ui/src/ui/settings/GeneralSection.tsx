@@ -100,22 +100,25 @@ export const GeneralSection = observer(function GeneralSection({ browser }: { br
   );
 });
 
+function updateDetail(): string {
+  if (!updater.isAvailable) return updater.unavailableReason;
+  if (updater.state === 'checking') return 'Checking…';
+  const next = updater.available?.version;
+  if (next && updater.handedOver) return `Wake ${next} is in your Downloads folder. Finish installing it in the window that opened, then restart Wake.`;
+  if (updater.error) return updater.error;
+  if (next) return `Wake ${next} is available.`;
+  if (updater.lastChecked) return `Up to date. Last checked ${relativeTime(updater.lastChecked / 1000)}.`;
+  return 'New versions come from GitHub releases.';
+}
+
 const UpdatesGroup = observer(function UpdatesGroup() {
-  const detail = !updater.isAvailable
-    ? updater.unavailableReason
-    : updater.state === 'checking'
-      ? 'Checking…'
-      : updater.available
-        ? `Wake ${updater.available.version} is available.`
-        : updater.lastChecked
-          ? `Up to date. Last checked ${relativeTime(updater.lastChecked / 1000)}.`
-          : 'New versions come from GitHub releases.';
+  const detail = updateDetail();
   return (
     <Group title="Updates">
       <Row label={`Wake ${updater.version}`} detail={detail}>
         {updater.available ? (
           <button className="button primary" disabled={updater.state === 'installing'} onClick={() => void updater.install()}>
-            {updater.state === 'installing' ? 'Installing…' : 'Install and Restart'}
+            {updater.state === 'installing' ? (updater.isManual ? 'Downloading…' : 'Installing…') : updater.isManual ? 'Download and Install' : 'Install and Restart'}
           </button>
         ) : (
           <button className="button" disabled={!updater.isAvailable || updater.state === 'checking'} onClick={() => void updater.check(true)}>

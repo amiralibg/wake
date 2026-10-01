@@ -525,10 +525,10 @@ fn run(app: &mut App, target: &Target, window: u64, cmd: &str, msg: &Value, req:
                     Some(update) => crate::updater::install(update, &data_dir),
                     None => Err("No update to install.".into()),
                 };
-                let ok = result.is_ok();
-                let _ = proxy.send_event(UserEvent::Reply { window, req, result: result.map(|_| Value::Null) });
+                let restarts = result.as_ref().is_ok_and(|r| *r);
+                let _ = proxy.send_event(UserEvent::Reply { window, req, result: result.map(|r| json!({ "restarts": r })) });
                 // The new version is starting: every window saves and closes.
-                if ok {
+                if restarts {
                     let _ = proxy.send_event(UserEvent::Broadcast { name: "window.closeRequested", payload: json!({ "quit": true }) });
                 }
             });
