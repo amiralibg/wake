@@ -11,6 +11,8 @@ jobs:
     runs-on: macos-26
     steps:
       - uses: actions/checkout@v4
+      - name: Check the shared page scripts
+        run: node shared/check-scripts.mjs
       - uses: maxim-lobanov/setup-xcode@v1
         with:
           xcode-version: latest-stable

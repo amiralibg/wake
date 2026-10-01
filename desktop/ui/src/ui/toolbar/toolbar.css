@@ -1,0 +1,461 @@
+.toolbar {
+  position: relative;
+  height: 56px;
+  flex: none;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 12px 0 16px;
+  gap: 12px;
+  z-index: 5;
+}
+
+.toolbar.is-floating {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+}
+
+/* Over pages (Zen), the islands need to hold their own: without Liquid Glass's
+   refraction, translucent glass lets page text read straight through. */
+.toolbar.is-floating .glass {
+  background: var(--glass-strong);
+  backdrop-filter: blur(30px) saturate(180%);
+  -webkit-backdrop-filter: blur(30px) saturate(180%);
+  box-shadow: 0 6px 14px rgba(0, 0, 0, 0.28), inset 0 0.5px 0 var(--glass-rim);
+}
+
+.toolbar-leading {
+  display: flex;
+  align-items: center;
+  min-width: 0;
+  flex: 0 1 auto;
+  overflow: hidden;
+  padding: 6px 0;
+}
+
+.toolbar-center {
+  position: absolute;
+  top: 12px;
+  display: flex;
+  justify-content: center;
+}
+
+.toolbar-trailing {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex: none;
+}
+
+.toolbar-divider {
+  width: 1px;
+  height: 16px;
+  margin: 0 3px;
+  background: var(--separator);
+  flex: none;
+}
+
+/* Thread island */
+.thread-island {
+  height: 32px;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  flex: none;
+}
+
+.thread-button {
+  height: 28px;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 0 6px 0 10px;
+  border-radius: 999px;
+  font-weight: 600;
+}
+
+.thread-button:hover {
+  background: var(--fill-hover);
+}
+
+.thread-title {
+  font-size: 13px;
+}
+
+.trail-strip {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  padding-right: 3px;
+}
+
+.trail-chip {
+  height: 24px;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 0 6px;
+  border-radius: 999px;
+  transition: background var(--t-hover), padding var(--t-chrome);
+}
+
+.trail-chip:hover {
+  background: var(--fill);
+}
+
+.trail-chip.is-focused {
+  background: var(--fill-2);
+}
+
+.trail-chip.has-title {
+  padding: 0 9px;
+}
+
+.chip-icon {
+  position: relative;
+  display: inline-flex;
+}
+
+.chip-title {
+  max-width: 150px;
+  font-size: 12px;
+  font-weight: 500;
+}
+
+.loading-dot {
+  position: absolute;
+  right: -2px;
+  bottom: -2px;
+  width: 5px;
+  height: 5px;
+  border-radius: 50%;
+  background: var(--accent);
+  animation: pulse 0.6s ease-in-out infinite alternate;
+}
+
+.live-dot {
+  position: absolute;
+  right: -2.5px;
+  top: -2.5px;
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  box-shadow: 0 0 0 1px var(--window);
+}
+
+.overflow-badge {
+  font-size: 10.5px;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+  padding: 0 5px;
+}
+
+.favicon {
+  display: inline-block;
+  flex: none;
+  object-fit: contain;
+}
+
+.favicon.monogram {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  color: white;
+  font-weight: 700;
+  line-height: 1;
+}
+
+/* Address */
+.address {
+  width: 100%;
+  min-width: 0;
+  height: 32px;
+  display: flex;
+  align-items: center;
+}
+
+.address-button {
+  flex: 1;
+  min-width: 0;
+  height: 32px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 0 14px;
+  border-radius: 999px;
+}
+
+.address-button:hover {
+  background: var(--fill);
+}
+
+.address-label {
+  flex: 1;
+  text-align: center;
+  font-size: 13px;
+}
+
+.address-key {
+  font-size: 11px;
+  white-space: nowrap;
+}
+
+.env-switcher {
+  margin-left: 5px;
+  flex: none;
+}
+
+.env-label {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  height: 22px;
+  padding: 0 8px;
+  border-radius: 999px;
+  font-size: 11px;
+  font-weight: 600;
+}
+
+.env-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+}
+
+/* Actions and dev */
+.actions,
+.dev-island {
+  height: 32px;
+  display: flex;
+  align-items: center;
+  padding: 0 4px;
+}
+
+.icon-button.is-active {
+  color: var(--accent);
+  background: var(--accent-soft);
+}
+
+.branch-label {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 0 8px;
+  font-size: 12px;
+  font-weight: 500;
+  max-width: 180px;
+}
+
+.branch-label.link {
+  font-weight: 400;
+  height: 26px;
+  border-radius: 999px;
+}
+
+.branch-label.link:hover {
+  background: var(--fill-hover);
+}
+
+.hmr-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 0 6px;
+  font-size: 11px;
+  font-weight: 600;
+}
+
+.hmr-badge.connected {
+  color: var(--green);
+}
+
+.hmr-badge.disconnected {
+  color: var(--text-3);
+}
+
+.hmr-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: currentColor;
+}
+
+.badge-anchor {
+  position: relative;
+  display: inline-flex;
+}
+
+.count-badge {
+  position: absolute;
+  top: 0;
+  right: 1px;
+  min-width: 15px;
+  height: 15px;
+  padding: 0 4px;
+  border-radius: 999px;
+  background: var(--red);
+  color: white;
+  font-size: 9px;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  pointer-events: none;
+}
+
+/* Window controls */
+.window-controls {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  margin-left: 4px;
+}
+
+.window-button {
+  width: 32px;
+  height: 28px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 8px;
+  color: var(--text-2);
+  transition: background var(--t-hover), color var(--t-hover);
+}
+
+.window-button:hover {
+  background: var(--fill-hover);
+  color: var(--text);
+}
+
+.window-button.close:hover {
+  background: #e81123;
+  color: white;
+}
+
+/* Popovers (thread switcher and friends) */
+.popover {
+  position: fixed;
+  z-index: 900;
+  border-radius: 14px;
+  width: 320px;
+  animation: menu-in 140ms var(--spring);
+  transform-origin: top left;
+  overflow: hidden;
+}
+
+.popover-divider {
+  height: 1px;
+  background: var(--separator);
+}
+
+.switcher-current {
+  padding: 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.switcher-title {
+  border: none;
+  background: none;
+  font-size: 15px;
+  font-weight: 600;
+  padding: 0;
+}
+
+.switcher-meta {
+  display: flex;
+  align-items: center;
+  font-size: 12px;
+}
+
+.switcher-empty {
+  padding: 14px;
+  font-size: 12px;
+}
+
+.switcher-list {
+  max-height: 300px;
+  overflow-y: auto;
+  padding: 6px;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.switcher-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 6px 8px;
+  border-radius: 7px;
+  text-align: left;
+}
+
+.switcher-row:hover {
+  background: var(--fill-hover);
+}
+
+.switcher-row-text {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+
+.switcher-row-title {
+  font-weight: 500;
+}
+
+.switcher-row-meta {
+  font-size: 11px;
+}
+
+.switcher-new {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 14px;
+  text-align: left;
+}
+
+.switcher-new:hover {
+  background: var(--fill-hover);
+}
+
+.resolve-form {
+  padding: 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.resolve-title {
+  font-weight: 600;
+}
+
+.resolve-note {
+  font-size: 11px;
+}
+
+.resolve-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+}
+
+/* Floating over pages, the window buttons get an island of their own. */
+.toolbar.is-floating .window-controls {
+  padding: 4px;
+  border-radius: 999px;
+  background: var(--glass-strong);
+  backdrop-filter: blur(30px) saturate(180%);
+  -webkit-backdrop-filter: blur(30px) saturate(180%);
+  box-shadow: 0 6px 14px rgba(0, 0, 0, 0.28), inset 0 0.5px 0 var(--glass-rim);
+}
+.toolbar.is-floating .window-button {
+  border-radius: 999px;
+}

@@ -19,6 +19,10 @@ targets:
     platform: macOS
     sources:
       - path: Wake
+      # Page scripts shared with the Windows and Linux apps; loaded by SharedScript.
+      - path: shared/scripts
+        type: folder
+        buildPhase: resources
     dependencies:
       - package: Sparkle
     info:

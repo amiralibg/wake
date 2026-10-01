@@ -1,0 +1,5 @@
+.shots/
+dist/
+packaging/.tools/
+packaging/windows/MicrosoftEdgeWebview2Setup.exe
+host/target/

@@ -48,7 +48,8 @@ final class DevToolsSession {
     @discardableResult
     func runAsync(_ body: String, arguments: [String: Any] = [:], world: WKContentWorld = .page) async -> Any? {
         guard let webView else { return nil }
-        let result = try? await webView.callAsyncJavaScript(body, arguments: arguments, in: nil, contentWorld: world)
+        // Shared scripts read their arguments from `params`.
+        let result = try? await webView.callAsyncJavaScript(body, arguments: ["params": arguments], in: nil, contentWorld: world)
         return result is NSNull ? nil : result
     }
 

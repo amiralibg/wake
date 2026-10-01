@@ -405,13 +405,7 @@ final class BrowserPage: NSObject, Identifiable {
     }
 
     fileprivate func resolveFavicon() async {
-        let script = """
-        (() => {
-          const link = document.querySelector("link[rel~='icon'][sizes='32x32'], link[rel~='icon'], link[rel='apple-touch-icon']");
-          return link ? link.href : new URL('/favicon.ico', location.href).href;
-        })()
-        """
-        let href = try? await webView.evaluateJavaScript(script) as? String
+        let href = try? await webView.evaluateJavaScript(SharedScript.favicon.source(), in: nil, contentWorld: WebScripts.world) as? String
         faviconURL = href.flatMap(URL.init(string:))
     }
 
