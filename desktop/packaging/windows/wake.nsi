@@ -2,6 +2,10 @@
 ;
 ;   makensis /DVERSION=0.2.3 /DBINARY=path\to\wake.exe /DOUTDIR=dist desktop\packaging\windows\wake.nsi
 ;
+; MSVC builds link WebView2's loader in. A MinGW build (cross-compiled) loads
+; WebView2Loader.dll instead: pass /DLOADER=path\to\WebView2Loader.dll (from the
+; webview2-com-sys crate's x64 folder) to ship it beside Wake.exe.
+;
 ; Per-user (no admin prompt), into %LOCALAPPDATA%\Programs\Wake. The in-app
 ; updater runs it with /S: it closes Wake if it's still running, replaces the
 ; files, and the updater starts Wake again. If WebView2 is missing (older
@@ -104,6 +108,9 @@ Section "Wake"
 
   SetOutPath "$INSTDIR"
   File "/oname=Wake.exe" "${BINARY}"
+!ifdef LOADER
+  File "/oname=WebView2Loader.dll" "${LOADER}"
+!endif
   WriteUninstaller "$INSTDIR\Uninstall.exe"
 
   CreateShortcut "$SMPROGRAMS\Wake.lnk" "$INSTDIR\Wake.exe"
@@ -128,6 +135,7 @@ SectionEnd
 Section "Uninstall"
   Call un.CloseWake
   Delete "$INSTDIR\Wake.exe"
+  Delete "$INSTDIR\WebView2Loader.dll"
   Delete "$INSTDIR\Uninstall.exe"
   RMDir "$INSTDIR"
   Delete "$SMPROGRAMS\Wake.lnk"
