@@ -4,7 +4,7 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
   <title>About Wake, a new age of browsers</title>
-  <meta name="description" content="Why Wake exists: tab bars have looked the same for twenty years. Wake opens every page beside the one you came from, as a native Mac app.">
+  <meta name="description" content="Why Wake exists: tab bars have looked the same for twenty years. Wake opens every page beside the one you came from, as a native app for Mac, Windows and Linux.">
   <meta name="theme-color" content="#f5f3ef">
   <meta property="og:title" content="About Wake, a new age of browsers">
   <meta property="og:description" content="Tab bars have looked the same for twenty years. The web hasn't.">
@@ -106,8 +106,8 @@
           </li>
           <li class="principle">
             <span class="num" aria-hidden="true">04</span>
-            <h3 data-reveal>Be a real Mac app.</h3>
-            <p data-reveal style="--i: 1">SwiftUI and AppKit for the interface, WebKit for the pages. No Chromium, no Electron, no second browser engine bundled inside.</p>
+            <h3 data-reveal>Be native, everywhere.</h3>
+            <p data-reveal style="--i: 1">On the Mac, SwiftUI and AppKit for the interface and WebKit for the pages. On Windows and Linux, a small Rust app on the web engine the system already has. No Electron, no second browser engine bundled inside.</p>
           </li>
           <li class="principle">
             <span class="num" aria-hidden="true">05</span>
@@ -147,10 +147,10 @@
     <section class="marquee" aria-labelledby="stack-title">
       <h2 id="stack-title" class="sr-only">What Wake is made of</h2>
       <p class="marquee-track" aria-hidden="true">
-        <span>SwiftUI</span><span>AppKit</span><span>WebKit</span><span>Metal</span><span>Sparkle</span><span>Swift&nbsp;6</span><span>SwiftUI</span><span>AppKit</span>
+        <span>SwiftUI</span><span>AppKit</span><span>WebKit</span><span>Metal</span><span>Sparkle</span><span>Swift&nbsp;6</span><span>Rust</span><span>WebKitGTK</span><span>WebView2</span><span>WebGL</span>
       </p>
       <div class="wrap marquee-note">
-        <p class="lead" data-reveal>Made from Apple's own frameworks. Pages render in WebKit, the engine behind Safari, so sites behave the way they do there. Wake runs on macOS 14 and later, and uses Liquid Glass on macOS 26.</p>
+        <p class="lead" data-reveal>On the Mac, made from Apple's own frameworks: pages render in WebKit, the engine behind Safari, and Wake uses Liquid Glass on macOS 26. On Linux, pages render in WebKitGTK, the same engine. On Windows, in Microsoft Edge WebView2, which is part of Windows and built on Chromium. Wake runs on macOS 14 and later, Windows 10 and 11, and Linux.</p>
       </div>
     </section>
 
@@ -179,7 +179,7 @@
           <span class="beta">Beta</span>
           <div>
             <p>Every 0.x release is a beta. Expect rough edges, and please report what you find in <a class="textlink" href="https://github.com/amiralibg/wake/issues">GitHub Issues</a>.</p>
-            <p>Wake isn't signed with an Apple Developer ID yet. The <a class="textlink" href="./#download">download page</a> has the one-line fix for the warning macOS shows.</p>
+            <p>Wake isn't signed with an Apple Developer ID or a Windows code-signing certificate yet. The <a class="textlink" href="./#download">download page</a> shows how to get past the warning macOS or Windows shows.</p>
           </div>
         </div>
       </div>
@@ -188,11 +188,11 @@
     <section class="water band on-water" data-water="still" data-bow-y="0.8" aria-labelledby="band-title">
       <canvas aria-hidden="true"></canvas>
       <div class="wrap">
-        <p class="label">Wake <span data-version>0.1.0</span> beta · macOS 14 or later</p>
+        <p class="label">Wake <span data-version>0.1.0</span> beta · macOS, Windows and Linux</p>
         <h2 id="band-title" class="h2" data-split>Ready for the <em>new age?</em></h2>
         <a class="btn btn-primary btn-large" href="./#download">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 4v11M7 10.5 12 15.5l5-5M5 20h14"/></svg>
-          Get Wake for Mac
+          Get Wake
         </a>
       </div>
     </section>

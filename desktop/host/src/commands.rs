@@ -728,7 +728,7 @@ fn layout(app: &mut App, window: u64, msg: &Value) {
             let n = |k: &str| frame.get(k).and_then(Value::as_f64).unwrap_or(0.0);
             if let Some(page) = app.pages.get_mut(id) {
                 if page.window == window {
-                    page.set_frame(Some((n("x"), n("y"), n("w"), n("h"))), host);
+                    page.set_frame(Some((n("x"), n("y"), n("w"), n("h"), n("r"))), host);
                     shown.insert(id.to_string());
                 }
             }

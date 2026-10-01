@@ -10,6 +10,7 @@
 
 import { Spring, Springs } from '../motion';
 import { host } from '../../host/host';
+import { settings } from '../../model/settings';
 import type { Page } from '../../model/page';
 
 export interface Rect {
@@ -160,12 +161,13 @@ export class LayoutEngine {
   }
 
   private sendFrames() {
-    const frames: { page: string; x: number; y: number; w: number; h: number }[] = [];
-    const add = (page: Page, rect: Rect) =>
-      frames.push({ page: page.id, x: Math.round(rect.x), y: Math.round(rect.y), w: Math.round(rect.w), h: Math.round(rect.h) });
+    // `r`: the corner radius the native webview is clipped to, matching its card.
+    const frames: { page: string; x: number; y: number; w: number; h: number; r: number }[] = [];
+    const add = (page: Page, rect: Rect, r = settings.cornerRadius) =>
+      frames.push({ page: page.id, x: Math.round(rect.x), y: Math.round(rect.y), w: Math.round(rect.w), h: Math.round(rect.h), r });
 
     if (this.fullscreen) {
-      add(this.fullscreen, { x: 0, y: 0, w: window.innerWidth, h: window.innerHeight });
+      add(this.fullscreen, { x: 0, y: 0, w: window.innerWidth, h: window.innerHeight }, 0);
     } else {
       if (!this.covered) {
         for (const id of this.order) {

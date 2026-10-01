@@ -300,11 +300,24 @@ pub fn eval(webview: &wry::WebView, script: &str, _world: World) {
     let _ = webview.evaluate_script(script);
 }
 
-pub fn set_frame(webview: &wry::WebView, (x, y, w, h): (f64, f64, f64, f64), _window: &crate::window::BrowserWindow) {
+pub fn set_frame(webview: &wry::WebView, (x, y, w, h, radius): (f64, f64, f64, f64, f64), window: &crate::window::BrowserWindow) {
+    let (w, h) = (w.round().max(1.0), h.round().max(1.0));
     let _ = webview.set_bounds(wry::Rect {
         position: wry::dpi::LogicalPosition::new(x.round(), y.round()).into(),
-        size: wry::dpi::LogicalSize::new(w.round().max(1.0), h.round().max(1.0)).into(),
+        size: wry::dpi::LogicalSize::new(w, h).into(),
     });
+    // Round the page's corners to match its card: a child window can't be
+    // transparent, so clip it to a rounded region (not antialiased; at card
+    // radii the steps are a pixel or two).
+    let scale = window.window.scale_factor();
+    let (pw, ph) = ((w * scale).round() as i32, (h * scale).round() as i32);
+    let diameter = (radius * scale * 2.0).round() as i32;
+    unsafe {
+        use windows::Win32::Graphics::Gdi::{CreateRoundRectRgn, SetWindowRgn};
+        let region = if diameter > 0 { Some(CreateRoundRectRgn(0, 0, pw + 1, ph + 1, diameter, diameter)) } else { None };
+        // The window owns the region from here on.
+        SetWindowRgn(webview.hwnd(), region, true);
+    }
 }
 
 fn add_dev_script(core: &ICoreWebView2, state: &PageState) {

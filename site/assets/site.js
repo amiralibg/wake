@@ -260,7 +260,7 @@ document.querySelectorAll('[data-copy]').forEach((button) => {
 // the steps that get past it, and to the Homebrew line that avoids it.
 const installSteps = document.querySelector('.howto');
 if (installSteps) {
-  document.querySelectorAll('[data-dmg]').forEach((button) => {
+  document.querySelectorAll('[data-dmg], [data-asset]').forEach((button) => {
     button.addEventListener('click', () => {
       const nav = document.querySelector('.nav')?.getBoundingClientRect().height ?? 0;
       const top = installSteps.getBoundingClientRect().top + scrollY - nav - 16;
@@ -272,7 +272,21 @@ if (installSteps) {
 
 /* ---------- Latest release from GitHub ---------- */
 
-const releaseTargets = document.querySelectorAll('[data-dmg], [data-version], [data-date], [data-size]');
+// The Windows installer and the Linux AppImage, by their names in a release.
+const desktopAssets = {
+  windows: (name) => name.endsWith('-windows-x64-setup.exe'),
+  linux: (name) => name.endsWith('-linux-x86_64.AppImage'),
+};
+// Which download the hero button offers: this visitor's platform, if the latest
+// release has a package for it (else the Mac's, as the HTML says).
+const visitorPlatform = (() => {
+  const platform = (navigator.userAgentData?.platform || navigator.platform || '').toLowerCase();
+  if (platform.includes('win')) return 'windows';
+  if (platform.includes('linux') && !/android/i.test(navigator.userAgent)) return 'linux';
+  return null;
+})();
+
+const releaseTargets = document.querySelectorAll('[data-dmg], [data-asset], [data-version], [data-date], [data-size]');
 if (releaseTargets.length) {
   fetch('https://api.github.com/repos/amiralibg/wake/releases/latest', { headers: { Accept: 'application/vnd.github+json' } })
     .then((response) => (response.ok ? response.json() : Promise.reject(response.status)))
@@ -282,6 +296,21 @@ if (releaseTargets.length) {
       const date = new Date(release.published_at).toLocaleDateString('en', { year: 'numeric', month: 'long', day: 'numeric' });
       const size = dmg ? `${(dmg.size / 1024 / 1024).toFixed(1)} MB` : null;
       document.querySelectorAll('[data-dmg]').forEach((a) => dmg && (a.href = dmg.browser_download_url));
+      // Without a package in the latest release, the link stays on the release page.
+      for (const [platform, matches] of Object.entries(desktopAssets)) {
+        const asset = release.assets?.find((a) => matches(a.name));
+        if (!asset) continue;
+        document.querySelectorAll(`[data-asset="${platform}"]`).forEach((a) => (a.href = asset.browser_download_url));
+        if (platform === visitorPlatform) {
+          const hero = document.querySelector('.hero [data-dmg]');
+          const label = hero?.querySelector('[data-hero-label]');
+          if (hero && label) {
+            hero.removeAttribute('data-dmg');
+            hero.href = asset.browser_download_url;
+            label.textContent = platform === 'windows' ? 'Download for Windows' : 'Download for Linux';
+          }
+        }
+      }
       document.querySelectorAll('[data-version]').forEach((el) => (el.textContent = version));
       document.querySelectorAll('[data-date]').forEach((el) => (el.textContent = date));
       document.querySelectorAll('[data-size]').forEach((el) => size && (el.textContent = size));

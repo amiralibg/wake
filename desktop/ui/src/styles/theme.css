@@ -148,6 +148,15 @@ textarea::placeholder {
   outline-offset: 1px;
 }
 
+/* Text fields always count as focus-visible; the caret shows where you are, as
+   on the Mac. The ring stays for buttons reached with the keyboard. */
+input:focus-visible,
+textarea:focus-visible,
+select:focus-visible,
+[contenteditable]:focus-visible {
+  outline: none;
+}
+
 ::selection {
   background: color-mix(in srgb, var(--accent) 30%, transparent);
 }

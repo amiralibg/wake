@@ -34,7 +34,8 @@ pub struct Page {
     pub webview: WebView,
     pub dev_hooks: bool,
     pub visible: bool,
-    pub frame: Option<(f64, f64, f64, f64)>,
+    /// x, y, width, height and corner radius, in logical pixels.
+    pub frame: Option<(f64, f64, f64, f64, f64)>,
     pub platform: platform::PageState,
 }
 
@@ -273,7 +274,7 @@ impl Page {
         platform::eval(&self.webview, script, world);
     }
 
-    pub fn set_frame(&mut self, frame: Option<(f64, f64, f64, f64)>, layout: &crate::window::BrowserWindow) {
+    pub fn set_frame(&mut self, frame: Option<(f64, f64, f64, f64, f64)>, layout: &crate::window::BrowserWindow) {
         match frame {
             Some(rect) => {
                 if self.frame != Some(rect) {

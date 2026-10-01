@@ -15,7 +15,7 @@ pub fn setup_page(_webview: &wry::WebView, _id: &str, _proxy: &Proxy, _keys: &Ke
 pub fn eval(webview: &wry::WebView, script: &str, _world: World) {
     let _ = webview.evaluate_script(script);
 }
-pub fn set_frame(_webview: &wry::WebView, _frame: (f64, f64, f64, f64), _window: &crate::window::BrowserWindow) {}
+pub fn set_frame(_webview: &wry::WebView, _frame: (f64, f64, f64, f64, f64), _window: &crate::window::BrowserWindow) {}
 pub fn set_dev_hooks(_webview: &wry::WebView, _state: &PageState, _on: bool) {}
 pub fn set_user_agent(_webview: &wry::WebView, _agent: Option<&str>) {}
 pub fn set_javascript_enabled(_webview: &wry::WebView, _on: bool) {}

@@ -16,6 +16,8 @@ import { Segmented, Switch } from '../settings/components';
 import { BrowserMark } from '../import/BrowserMark';
 import { importHeadline } from '../import/ImportSheet';
 import { WaterRenderer } from './water';
+import { WindowControls } from '../toolbar/Toolbar';
+import { host } from '../../host/host';
 import icon from '../../assets/icon.png';
 import '../settings/settings.css';
 import '../import/import.css';
@@ -72,13 +74,16 @@ export const Onboarding = observer(function Onboarding({ browser }: { browser: B
   return (
     <div className="onboarding" style={{ '--accent': settings.accentColor } as CSSProperties}>
       <Water progress={index / (STEPS.length - 1)} dropID={index} />
-      <div className="onboarding-top">
+      {/* The window has no title bar: this strip moves it, as the toolbar does elsewhere. */}
+      <div className="onboarding-titlebar" onPointerDown={dragWindow}>
         {step !== 'ready' && (
           <button className="onboarding-link" onClick={finish} title="Skip (Esc)">
             Skip tour
           </button>
         )}
+        <WindowControls browser={browser} />
       </div>
+      <div className="onboarding-top" />
       <ScaleToFit>
         <div key={step} className={`onboarding-step ${forward ? 'from-right' : 'from-left'}`}>
           {step === 'welcome' && <WelcomeStep />}
@@ -120,6 +125,12 @@ export const Onboarding = observer(function Onboarding({ browser }: { browser: B
     </div>
   );
 });
+
+function dragWindow(event: React.PointerEvent) {
+  if (event.button !== 0 || event.target !== event.currentTarget) return;
+  if (event.detail === 2) host.send('window.toggleMaximize');
+  else host.send('window.drag');
+}
 
 // MARK: The water
 

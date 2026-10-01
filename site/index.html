@@ -4,10 +4,10 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
   <title>Wake, the browser for a new age</title>
-  <meta name="description" content="Wake is a native Mac browser where every link opens as a column beside the page you came from. Free, open source, no Chromium, no Electron.">
+  <meta name="description" content="Wake is a native browser for Mac, Windows and Linux where every link opens as a column beside the page you came from. Free, open source, no Electron.">
   <meta name="theme-color" content="#0c0c0d">
   <meta property="og:title" content="Wake, the browser for a new age">
-  <meta property="og:description" content="A native Mac browser where pages are columns in a trail, not tabs in a bar.">
+  <meta property="og:description" content="A native browser for Mac, Windows and Linux where pages are columns in a trail, not tabs in a bar.">
   <meta property="og:image" content="assets/icon.png">
   <meta name="twitter:card" content="summary">
   <meta name="twitter:creator" content="@_amiralibgi">
@@ -44,17 +44,17 @@
     <section class="water hero on-water" data-water="scroll" data-bow-y="0.84" aria-labelledby="hero-title">
       <canvas aria-hidden="true"></canvas>
       <div class="hero-body wrap">
-        <p class="label" data-reveal>Wake <span data-version>0.1.0</span> beta · for macOS</p>
+        <p class="label" data-reveal>Wake <span data-version>0.1.0</span> beta · for macOS, Windows and Linux</p>
         <h1 id="hero-title" class="display" data-split>The browser for a <em>new age.</em></h1>
-        <p class="lead" data-reveal style="--i: 4">Every link opens as a column beside the page you came from, so the path you took stays on screen. Native to the Mac. No Chromium, no Electron.</p>
+        <p class="lead" data-reveal style="--i: 4">Every link opens as a column beside the page you came from, so the path you took stays on screen. Native on the Mac, Windows and Linux, on your system's own web engine. No Electron.</p>
         <div class="hero-actions" data-reveal style="--i: 6">
           <a class="btn btn-primary btn-large" data-dmg href="https://github.com/amiralibg/wake/releases/download/v0.1.0/Wake-0.1.0.dmg">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 4v11M7 10.5 12 15.5l5-5M5 20h14"/></svg>
-            Download for Mac
+            <span data-hero-label>Download for Mac</span>
           </a>
           <a class="btn btn-ghost btn-large" href="about.html">Why Wake exists <span class="arrow" aria-hidden="true">→</span></a>
         </div>
-        <p class="hero-meta muted" data-reveal style="--i: 7">macOS 14 or later · free and open source</p>
+        <p class="hero-meta muted" data-reveal style="--i: 7">macOS 14+ · Windows 10 and 11 · Linux · free and open source · <a class="textlink" href="#download">all downloads</a></p>
       </div>
       <p class="hero-hint label" aria-hidden="true"><span>Move across the water · click to drop a stone</span></p>
     </section>
@@ -209,7 +209,7 @@
             </div>
             <div class="card-copy">
               <h3 class="h3">Liquid Glass</h3>
-              <p>On macOS 26 the toolbar floats as glass islands and shows up only when you reach for it. Zen hides it altogether.</p>
+              <p>On macOS 26 the toolbar floats as glass islands (frosted glass on Windows and Linux) and shows up only when you reach for it. Zen hides it altogether.</p>
             </div>
           </article>
 
@@ -288,12 +288,20 @@
           </svg>
           <p class="label">Download</p>
           <h2 id="download-title" class="h2" data-split>Step into the <em>new age.</em></h2>
-          <p class="lead" data-reveal>Free, open source, and made for the Mac.</p>
+          <p class="lead" data-reveal>Free, open source, for the Mac, Windows and Linux.</p>
 
           <div class="install-actions" data-reveal style="--i: 1">
             <a class="btn btn-primary btn-large" data-dmg href="https://github.com/amiralibg/wake/releases/download/v0.1.0/Wake-0.1.0.dmg">
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 4v11M7 10.5 12 15.5l5-5M5 20h14"/></svg>
-              Download Wake
+              Mac
+            </a>
+            <a class="btn btn-ghost btn-large" data-asset="windows" href="https://github.com/amiralibg/wake/releases/latest">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 4v11M7 10.5 12 15.5l5-5M5 20h14"/></svg>
+              Windows
+            </a>
+            <a class="btn btn-ghost btn-large" data-asset="linux" href="https://github.com/amiralibg/wake/releases/latest">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 4v11M7 10.5 12 15.5l5-5M5 20h14"/></svg>
+              Linux
             </a>
             <a class="textlink" href="https://github.com/amiralibg/wake/releases/latest">Release notes</a>
           </div>
@@ -301,8 +309,8 @@
           <dl class="release" data-reveal style="--i: 2">
             <dt>Version</dt><dd><span data-version>0.1.0</span> beta</dd>
             <dt>Released</dt><dd data-date>September 26, 2026</dd>
-            <dt>Disk image</dt><dd data-size>4.4 MB</dd>
-            <dt>Requires</dt><dd>macOS 14 Sonoma or later</dd>
+            <dt>Mac disk image</dt><dd data-size>4.4 MB</dd>
+            <dt>Requires</dt><dd>macOS 14 Sonoma or later; Windows 10 or 11 (64-bit); Linux from 2022 on (x86_64 or ARM64)</dd>
             <dt>License</dt><dd>MIT</dd>
           </dl>
         </div>
@@ -310,7 +318,7 @@
         <ol class="howto">
           <li data-reveal>
             <div>
-              <h3>Install from Terminal</h3>
+              <h3>On a Mac, install from Terminal</h3>
               <p>Wake isn't signed with an Apple Developer ID yet, so macOS blocks a copy downloaded in a browser. Installed with Homebrew, it opens straight away.</p>
               <div class="code">
                 <code>brew install --cask amiralibg/wake/wake</code>
@@ -330,7 +338,7 @@
           </li>
           <li data-reveal style="--i: 1">
             <div>
-              <h3>Or use the disk image</h3>
+              <h3>Or use the Mac disk image</h3>
               <p>Open <code>Wake.dmg</code> and drag Wake into Applications. Then clear the flag macOS puts on downloaded files, once:</p>
               <div class="code">
                 <code>xattr -cr /Applications/Wake.app</code>
@@ -343,14 +351,32 @@
           </li>
           <li data-reveal style="--i: 2">
             <div>
-              <h3>Import from your old browser</h3>
-              <p>The welcome tour sets your look and search engine. Then File › Import from Another Browser brings over history, cookies and site storage.</p>
+              <h3>On Windows</h3>
+              <p>Run <code>Wake-setup.exe</code>. It installs for your account, with no administrator prompt, and adds Wake to the Start menu. The installer isn't code-signed yet, so SmartScreen may stop it first: choose More info, then Run anyway.</p>
             </div>
           </li>
           <li data-reveal style="--i: 3">
             <div>
+              <h3>On Linux</h3>
+              <p>Wake comes as an AppImage: one file that runs on most distributions. Make it executable and open it:</p>
+              <div class="code">
+                <code>chmod +x Wake-*.AppImage &amp;&amp; ./Wake-*.AppImage</code>
+                <button class="copy" type="button" data-copy="chmod +x Wake-*.AppImage &amp;&amp; ./Wake-*.AppImage" aria-label="Copy command" aria-describedby="copy-status">
+                  <span class="idle">Copy</span><span class="done" aria-hidden="true">Copied</span>
+                </button>
+              </div>
+            </div>
+          </li>
+          <li data-reveal style="--i: 4">
+            <div>
+              <h3>Import from your old browser</h3>
+              <p>The welcome tour sets your look and search engine. Then File › Import from Another Browser brings over history, cookies and site storage.</p>
+            </div>
+          </li>
+          <li data-reveal style="--i: 5">
+            <div>
               <h3>Updates arrive on their own</h3>
-              <p>Wake checks once a day and installs a new version when you say so. You can also check from Wake › Check for Updates.</p>
+              <p>Wake checks once a day and installs a new version when you say so. You can also check from Wake › Check for Updates on the Mac, or Settings › General on Windows and Linux.</p>
             </div>
           </li>
         </ol>

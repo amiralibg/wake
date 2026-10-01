@@ -343,7 +343,9 @@ pub fn eval(webview: &wry::WebView, script: &str, world: World) {
     view.evaluate_javascript(script, world, None, None::<&gtk::gio::Cancellable>, |_| {});
 }
 
-pub fn set_frame(webview: &wry::WebView, (x, y, w, h): (f64, f64, f64, f64), window: &crate::window::BrowserWindow) {
+/// `_radius`: WebKitGTK draws its page outside any shape given to it or its
+/// parent window, so on Linux the page's corners stay square (Windows clips them).
+pub fn set_frame(webview: &wry::WebView, (x, y, w, h, _radius): (f64, f64, f64, f64, f64), window: &crate::window::BrowserWindow) {
     let view = webview.webview();
     window.layout.move_(&view, x.round() as i32, y.round() as i32);
     view.set_size_request(w.round().max(1.0) as i32, h.round().max(1.0) as i32);

@@ -82,7 +82,7 @@ export const Toolbar = observer(function Toolbar({ browser, floating = false }: 
       <div className="toolbar-trailing" ref={trailing}>
         {page?.isDeveloperMode && <DevIsland browser={browser} compact={width < COMPACT_DEV_WIDTH} />}
         <ActionsCapsule browser={browser} />
-        <WindowControls />
+        <WindowControls browser={browser} />
       </div>
     </div>
   );
@@ -271,7 +271,8 @@ const BranchLabel = observer(function BranchLabel({ browser, compact }: { browse
 
 // MARK: Window
 
-export const WindowControls = observer(function WindowControls() {
+/** Minimize, maximize and close; the close button saves the window's threads first. */
+export const WindowControls = observer(function WindowControls({ browser }: { browser: BrowserModel }) {
   const state = useWindowState();
   return (
     <div className="window-controls">
@@ -281,7 +282,7 @@ export const WindowControls = observer(function WindowControls() {
       <button className="window-button" title={state.maximized ? 'Restore' : 'Maximize'} aria-label="Maximize" onClick={() => host.send('window.toggleMaximize')}>
         {state.maximized ? <Layers size={12} /> : <Square size={11} />}
       </button>
-      <button className="window-button close" title="Close window" aria-label="Close window" onClick={() => host.send('window.closeRequest')}>
+      <button className="window-button close" title="Close window" aria-label="Close window" onClick={() => void browser.closeWindow()}>
         <X size={15} />
       </button>
     </div>

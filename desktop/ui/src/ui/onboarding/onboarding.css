@@ -51,11 +51,23 @@
 .onboarding-controls,
 .scale-to-fit { position: relative; }
 
-.onboarding-top {
-  height: 32px;
+.onboarding-top { height: 32px; }
+
+.onboarding-titlebar {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  z-index: 2;
+  height: 48px;
+  padding: 0 10px 0 48px;
   display: flex;
+  align-items: center;
   justify-content: flex-end;
+  gap: 12px;
 }
+.onboarding-titlebar .window-button { color: rgba(255, 255, 255, 0.6); }
+.onboarding-titlebar .window-button:hover:not(.close) { background: rgba(255, 255, 255, 0.1); color: #fff; }
 
 .onboarding-link {
   border: 0;

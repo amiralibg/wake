@@ -2,9 +2,9 @@
 
 <h1 align="center">Wake</h1>
 
-<p align="center">A macOS browser where pages are columns in a trail, not tabs in a bar.</p>
+<p align="center">A browser for macOS, Windows and Linux where pages are columns in a trail, not tabs in a bar.</p>
 
-Wake is a native macOS browser built with SwiftUI, AppKit and WebKit. No Chromium, no Electron.
+Wake is a native browser with no Electron and no bundled browser engine: it uses the web engine your system already has. On macOS it's built with SwiftUI, AppKit and WebKit. On Windows and Linux it's a small Rust app with a TypeScript interface, on Microsoft Edge WebView2 (Windows) and WebKitGTK (Linux). WebView2 is Chromium-based; the Mac and Linux apps use WebKit.
 
 ![A Wake window: the Kelvin wake pattern article scrolled off to the left, the Lord Kelvin article, and the Wake repository open as columns side by side](docs/screenshots/trail.png)
 
@@ -30,12 +30,16 @@ Wake is a native macOS browser built with SwiftUI, AppKit and WebKit. No Chromiu
 - **Apps.** Pin web apps to a slim capsule with unread badges.
 - **Developer mode.** Turns on automatically for localhost: local dev servers found on common ports, and a DevTools column with Elements (live DOM tree, picker, styles, computed values, box model, attribute and HTML editing), Console (with a JavaScript prompt, `$0`, history and completion), Network (every resource with a waterfall, headers, payloads, timing, replay, cURL, mocks and HAR export), Sources, Storage (local and session storage, cookies, IndexedDB, caches, service workers) and Performance (Web Vitals, frame rate, page weight and an audit). One click opens WebKit's full Web Inspector, the one Safari uses, for the debugger and Timelines. Also: open-in-editor through source maps, device previews at real iPhone and iPad sizes, emulation (appearance, user agent, JavaScript and styles off), a component inspector, a JSON viewer, git branch and HMR status.
 - **History and searches.** ⌘Y shows every page you visited, grouped by day; ⌥⌘Y shows what you searched for, from ⌘K or from any search engine's own box.
-- **Bring your data.** File ▸ Import from Another Browser copies history, searches, cookies (so you stay signed in) and site storage from Chrome, Arc, Dia, Brave, Edge, Vivaldi, Opera, Helium, Firefox, Zen and Safari.
+- **Bring your data.** File ▸ Import from Another Browser copies history, searches, cookies (so you stay signed in) and site storage from Chrome, Arc, Dia, Brave, Edge, Vivaldi, Opera, Helium, Firefox, Zen and Safari. On Windows and Linux: Chrome, Edge, Brave, Vivaldi, Opera, Chromium, Firefox, Zen, Waterfox, LibreWolf and Floorp.
 - **Search your way.** DuckDuckGo by default; Google, Brave, Bing, Ecosia, Startpage, Kagi, Perplexity, Yahoo or any URL with `%s`.
-- **Welcome tour.** A first-launch tour over live water (a Metal shader with a paper boat and its wake) that sets your look and search engine. Settings ▸ General shows it again.
-- **Zen, glass and settings.** Chrome floats as Liquid Glass islands on macOS 26 and appears only when you need it.
+- **Welcome tour.** A first-launch tour over live water (a shader with a paper boat and its wake: Metal on the Mac, WebGL elsewhere) that sets your look and search engine. Settings ▸ General shows it again.
+- **Zen, glass and settings.** Chrome floats as Liquid Glass islands on macOS 26 (frosted glass on Windows and Linux) and appears only when you need it.
+
+Shortcuts above are the Mac's. On Windows and Linux, ⌘ is Ctrl, and ⌥⌘ shortcuts are Ctrl+Shift (⌥⌘I is Ctrl+Shift+I).
 
 ## Building
+
+### macOS
 
 Requirements: macOS 14 or later to run; Xcode 26 or later (the macOS 26 SDK, for Liquid Glass) and [XcodeGen](https://github.com/yonaskolb/XcodeGen).
 
@@ -49,9 +53,15 @@ The Xcode project is generated from `project.yml` and isn't checked in.
 
 The app icon (a page leaving a wake of itself) is drawn in code; to regenerate it, run `swift Scripts/make-icon.swift`.
 
+### Windows and Linux
+
+The app in `desktop/` needs Rust and Node; Linux also needs WebKitGTK 4.1. See [desktop/README.md](desktop/README.md) for building, the architecture, and a Docker container for working on the Linux build from a Mac.
+
 ## Installing
 
-Wake is in **beta** (every 0.x release): expect rough edges, and please report what you find in [Issues](https://github.com/amiralibg/wake/issues).
+Wake is in **beta** (every 0.x release): expect rough edges, and please report what you find in [Issues](https://github.com/amiralibg/wake/issues). The Windows and Linux versions are newer than the Mac one.
+
+### macOS
 
 Wake isn't signed with an Apple Developer ID yet, so macOS blocks a copy downloaded in a browser. The easiest way around that is to install from Terminal, with [Homebrew](https://brew.sh):
 
@@ -78,6 +88,22 @@ It removes the quarantine flag macOS puts on downloaded files. Alternatively, tr
 Wake checks for updates once a day (Wake ▸ Check for Updates… or Settings ▸ General) and installs them when you say so. Updates don't need any of the above again.
 
 If Wake 0.2.1 or earlier says "Wake cannot be opened because of a problem" or quits right after launching, install the latest version with one of the commands above. Those builds were signed in a way that some Macs refuse to load. If something else goes wrong, please open an [issue](https://github.com/amiralibg/wake/issues) rather than choosing Report… in the macOS dialog: those reports go to Apple, not to Wake.
+
+### Windows
+
+Download `Wake-<version>-windows-x64-setup.exe` from [Releases](https://github.com/amiralibg/wake/releases/latest) and run it. It installs for your account only (no administrator prompt), into `%LOCALAPPDATA%\Programs\Wake`, and adds Wake to the Start menu. The installer isn't code-signed yet, so SmartScreen may warn you first: choose **More info ▸ Run anyway**. Wake needs Microsoft Edge WebView2, which Windows 11 includes; on Windows 10 the installer adds it if it's missing.
+
+### Linux
+
+Download `Wake-<version>-linux-x86_64.AppImage` (or `-aarch64`) from [Releases](https://github.com/amiralibg/wake/releases/latest), make it executable and run it:
+
+```bash
+chmod +x Wake-*.AppImage && ./Wake-*.AppImage
+```
+
+It runs on distributions from 2022 on (Ubuntu 22.04 or later, or anything with glibc 2.35+). If it doesn't start, your system may lack FUSE: install `libfuse2`, or run it with `APPIMAGE_EXTRACT_AND_RUN=1`.
+
+Both update themselves: Wake checks once a day and installs a new version when you say so.
 
 ## Releasing
 
@@ -113,9 +139,13 @@ To sign with a Developer ID and notarize, add `DEVELOPER_ID_CERTIFICATE` (a base
 
 The Homebrew cask lives in [amiralibg/homebrew-wake](https://github.com/amiralibg/homebrew-wake) and moves to each new release on its own, within three hours.
 
+The same tag also runs `.github/workflows/desktop-release.yml`, which builds the Windows installer and the Linux AppImages, signs them with [minisign](https://jedisct1.github.io/minisign/) for the in-app updater, and attaches them to the release once `release.yml` has published it. One-time setup: make a key with `minisign -G -W`, add the secret key file's contents as the secret `WAKE_MINISIGN_KEY`, and the public key (the second line of the `.pub` file) as the repository variable `WAKE_UPDATE_PUBLIC_KEY`. Without them the packages are still published, but can't update themselves.
+
 ## Layout
 
-One feature per folder under `Wake/Features` (Trail, Deck, Threads, Moments, PopOut, Live, Developer, Apps, Settings, …), with app wiring in `Wake/App` and shared helpers in `Wake/Support`. `HANDOFF.md` describes the architecture in more detail.
+- `Wake/`: the macOS app. One feature per folder under `Wake/Features` (Trail, Deck, Threads, Moments, PopOut, Live, Developer, Apps, Settings, …), with app wiring in `Wake/App` and shared helpers in `Wake/Support`. `HANDOFF.md` describes the architecture in more detail.
+- `desktop/`: the Windows and Linux app: `host/` (Rust: windows, web views, storage), `ui/` (TypeScript, React and MobX: the app itself) and `packaging/`. See [desktop/README.md](desktop/README.md).
+- `shared/`: what both apps use: the JavaScript Wake runs in pages and the data model. See [shared/README.md](shared/README.md).
 
 ## License
 
