@@ -51,7 +51,9 @@ export function isLocal(url: string | null | undefined): boolean {
 export function hostOf(url: string | null | undefined): string {
   if (!url) return '';
   try {
-    const host = new URL(url).hostname;
+    const parsed = new URL(url);
+    if (parsed.protocol === 'file:') return decodeURIComponent(parsed.pathname.split('/').pop() ?? '');
+    const host = parsed.hostname;
     return host.startsWith('www.') ? host.slice(4) : host;
   } catch {
     return url;
@@ -522,7 +524,10 @@ export class Page {
         if (typeof message.fraction === 'number') this.onScroll?.(message.fraction);
         break;
       case 'openLink':
-        if (typeof message.href === 'string') this.onOpenLink?.(message.href, !!message.background);
+        // A website can't open local files, however it asks; a local page can.
+        if (typeof message.href === 'string' && (!/^file:/i.test(message.href) || this.url?.startsWith('file:'))) {
+          this.onOpenLink?.(message.href, !!message.background);
+        }
         break;
       case 'state':
         this.isPlayingMedia = !!message.playing;

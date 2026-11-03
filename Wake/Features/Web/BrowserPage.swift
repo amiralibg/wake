@@ -127,11 +127,13 @@ final class BrowserPage: NSObject, Identifiable {
 
     var displayTitle: String {
         if isDevTools { return "DevTools · \(inspectedPage?.host ?? "")" }
-        let base = !title.isEmpty ? title : ((url ?? requestedURL)?.host() ?? "New page")
+        let address = url ?? requestedURL
+        let base = !title.isEmpty ? title : (address?.isFileURL == true ? address?.lastPathComponent : address?.host()) ?? "New page"
         return device.map { "\($0.preset.name) · \(base)" } ?? base
     }
 
     var host: String {
+        if url?.isFileURL == true { return url?.lastPathComponent ?? "" }
         guard let host = url?.host() else { return url?.absoluteString ?? "" }
         return host.hasPrefix("www.") ? String(host.dropFirst(4)) : host
     }
@@ -139,10 +141,23 @@ final class BrowserPage: NSObject, Identifiable {
     func load(_ url: URL) {
         failure = nil
         requestedURL = url
-        webView.load(URLRequest(url: url))
+        if url.isFileURL {
+            // WebKit refuses `load(_:)` for file URLs ("outside the sandbox"): the web
+            // content process needs the read access this call hands it.
+            webView.loadFileURL(url, allowingReadAccessTo: LocalFileAccess.readAccessRoot(for: url))
+        } else {
+            webView.load(URLRequest(url: url))
+        }
     }
 
-    func reload() { webView.reload() }
+    func reload() {
+        // After a failed local load there's no document for WebKit to reload.
+        if failure != nil, let requestedURL, requestedURL.isFileURL {
+            load(requestedURL)
+        } else {
+            webView.reload()
+        }
+    }
 
     /// The document's vertical scroll position, or nil if it can't be read.
     func scrollY() async -> Double? {
@@ -241,7 +256,7 @@ final class BrowserPage: NSObject, Identifiable {
         case "scroll":
             if let fraction = message["fraction"] as? Double { onScroll?(fraction) }
         case "openLink":
-            guard let href = message["href"] as? String, let url = URL(string: href) else { return }
+            guard let href = message["href"] as? String, let url = URL(string: href), mayOpen(url) else { return }
             onOpenLink?(url, message["background"] as? Bool ?? false)
         case "state":
             isPlayingMedia = message["playing"] as? Bool ?? false
@@ -418,6 +433,11 @@ final class BrowserPage: NSObject, Identifiable {
         guard !(nsError.domain == "WebKitErrorDomain" && [102, 204].contains(nsError.code)) else { return }
         failure = nsError.localizedDescription
     }
+
+    /// A website can't open local files, however it asks; a local page can.
+    fileprivate func mayOpen(_ url: URL) -> Bool {
+        !url.isFileURL || webView.url?.isFileURL == true
+    }
 }
 
 extension BrowserPage: WKNavigationDelegate {
@@ -428,6 +448,7 @@ extension BrowserPage: WKNavigationDelegate {
     ) async -> (WKNavigationActionPolicy, WKWebpagePreferences) {
         preferences.allowsContentJavaScript = !isJavaScriptDisabled
         guard let url = action.request.url, let scheme = url.scheme?.lowercased() else { return (.allow, preferences) }
+        if action.navigationType == .linkActivated, !mayOpen(url) { return (.cancel, preferences) }
         if ["http", "https", "about", "blob", "data", "file"].contains(scheme) {
             if interceptsAsColumn(action, url: url) { return (.cancel, preferences) }
             // Before the document loads, so developer hooks are in place from its start.
@@ -542,6 +563,11 @@ extension BrowserPage: WKUIDelegate {
         windowFeatures: WKWindowFeatures
     ) -> WKWebView? {
         guard action.targetFrame == nil else { return nil }
+        // A new web view has no read access: local files go through `load(_:)` instead.
+        if let url = action.request.url, url.isFileURL {
+            if mayOpen(url) { onOpenLink?(url, false) }
+            return nil
+        }
         return onOpenPopup?(configuration)
     }
 

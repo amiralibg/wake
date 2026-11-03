@@ -47,6 +47,7 @@ struct GeneralSettingsSection: View {
                     .fixedSize()
                 }
             }
+            SiteWidthsGroup()
             UpdatesGroup()
             SettingsGroup {
                 SettingsRow(label: "Welcome tour", detail: "The trail, your look, search and shortcuts, one screen each.") {
@@ -57,6 +58,45 @@ struct GeneralSettingsSection: View {
                 }
             }
             ShortcutsGroup()
+        }
+    }
+}
+
+/// Minimum column widths by address pattern.
+private struct SiteWidthsGroup: View {
+    @State private var rules = SiteWidthRules.shared
+
+    var body: some View {
+        SettingsGroup(title: "Site widths") {
+            SettingsRow(
+                label: "Minimum column width",
+                detail: "For sites that need room. * matches anything: github.com/* covers all of GitHub. To add the site you're on, choose View ▸ Keep This Width on This Site."
+            ) {
+                Button("Add Site") { rules.add() }
+            }
+            ForEach($rules.rules) { $rule in
+                SettingsDivider()
+                HStack(spacing: 10) {
+                    TextField("example.com/*", text: $rule.pattern)
+                        .textFieldStyle(.roundedBorder)
+                    TextField("Width", value: $rule.minWidth, format: .number.grouping(.never))
+                        .textFieldStyle(.roundedBorder)
+                        .multilineTextAlignment(.trailing)
+                        .frame(width: 70)
+                    Text("pt").foregroundStyle(.secondary)
+                    Button {
+                        rules.remove(rule)
+                    } label: {
+                        Image(systemName: "minus.circle")
+                    }
+                    .buttonStyle(.plain)
+                    .foregroundStyle(.secondary)
+                    .help("Remove")
+                    .accessibilityLabel("Remove \(rule.pattern)")
+                }
+                .padding(.horizontal, 14)
+                .frame(height: 44)
+            }
         }
     }
 }
@@ -93,12 +133,13 @@ private struct UpdatesGroup: View {
 private struct ShortcutsGroup: View {
     private let shortcuts: [(String, String)] = [
         ("Open the Deck and search", "⌘K"),
-        ("New column", "⌘T"),
+        ("New column · open a file", "⌘T  ⌘O"),
         ("Go to address in this column", "⌘L"),
         ("Close column · close window", "⌘W  ⇧⌘W"),
         ("Reopen closed column", "⇧⌘T"),
         ("Duplicate column", "⇧⌘D"),
-        ("Previous / next column", "⌘[  ⌘]"),
+        ("Previous / next column", "⌘[  ⌘]  ⌥⌘←  ⌥⌘→"),
+        ("Show all columns", "⇧⌘A"),
         ("Cycle columns", "⌃⇥  ⌃⇧⇥"),
         ("Previous / next column with a mouse", "⇧ scroll"),
         ("Column mode, then focus · move · jump", "⌃W  h l  H L  1–9"),

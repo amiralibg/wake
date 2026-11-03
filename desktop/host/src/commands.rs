@@ -469,6 +469,13 @@ fn run(app: &mut App, target: &Target, window: u64, cmd: &str, msg: &Value, req:
             }
             Some(Ok(dialog.pick_folder().map(|p| json!(p.to_string_lossy())).unwrap_or(Value::Null)))
         }
+        "dialog.file" => {
+            let mut dialog = rfd::FileDialog::new();
+            if let Some(title) = msg.get("title").and_then(Value::as_str) {
+                dialog = dialog.set_title(title);
+            }
+            Some(Ok(dialog.pick_file().map(|p| json!(p.to_string_lossy())).unwrap_or(Value::Null)))
+        }
         "dialog.save" => {
             // Saves text the UI made (a HAR, a copied response) where the user picks.
             let mut dialog = rfd::FileDialog::new().set_file_name(msg.get("name").and_then(Value::as_str).unwrap_or("download.txt"));

@@ -6,7 +6,8 @@ import CoreGraphics
 /// Default widths: one column fills the stage; with more, the stage is split into
 /// `columnsPerScreen` (2 for Balanced), and anything beyond that scrolls.
 /// A column the user resized keeps its own share of the stage, whatever its
-/// neighbours do. A lone column always fills the stage.
+/// neighbours do. A lone column always fills the stage. A site's minimum width
+/// (`minimums`) beats all of these, up to the stage's own width.
 struct TrailGeometry: Equatable {
     var stageWidth: CGFloat = 0
     var gap: CGFloat = 0
@@ -15,7 +16,7 @@ struct TrailGeometry: Equatable {
 
     init() {}
 
-    init(stageWidth: CGFloat, gap: CGFloat, inset: CGFloat, columnsPerScreen: CGFloat, customFractions: [CGFloat?]) {
+    init(stageWidth: CGFloat, gap: CGFloat, inset: CGFloat, columnsPerScreen: CGFloat, customFractions: [CGFloat?], minimums: [CGFloat?] = []) {
         self.stageWidth = stageWidth
         self.gap = gap
         self.inset = inset
@@ -28,9 +29,10 @@ struct TrailGeometry: Equatable {
             widths = [usable]
             return
         }
-        widths = customFractions.map { fraction in
-            guard let fraction else { return min(usable, max(minimum, standard)) }
-            return min(usable, max(resizedMinimum, fraction * usable))
+        widths = customFractions.enumerated().map { index, fraction in
+            let width = fraction.map { min(usable, max(resizedMinimum, $0 * usable)) } ?? min(usable, max(minimum, standard))
+            guard minimums.indices.contains(index), let floor = minimums[index] else { return width }
+            return min(usable, max(width, floor))
         }
     }
 

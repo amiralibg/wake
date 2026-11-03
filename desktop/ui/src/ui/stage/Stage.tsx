@@ -105,7 +105,7 @@ export const Stage = observer(function Stage({ browser, engine }: { browser: Bro
     return rest >= Metrics.minColumnWidth ? rest / usable : null;
   };
 
-  const geometry = new TrailGeometry(size.w, settings.gap, outerInset, settings.columnsPerScreen, columns.map(fraction));
+  const geometry = new TrailGeometry(size.w, settings.gap, outerInset, settings.columnsPerScreen, columns.map(fraction), columns.map((c) => trail.siteMinimumWidth(c)));
   trail.geometry = geometry;
   const offset =
     trail.dragOffset ?? (trail.restingOffset != null ? geometry.clamped(trail.restingOffset) : geometry.targetOffset(trail.focusedIndex, trail.focusSpan));

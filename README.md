@@ -25,6 +25,9 @@ Wake is a native browser with no Electron and no bundled browser engine: it uses
 
 - **The trail.** Links open as columns to the right, Niri-style. One column fills the window, two share it, more scroll. Each column resizes on its own edges without squeezing its neighbours.
 - **Threads and the Deck.** Each window works on a thread of pages. ⌘K raises the Deck: every thread as a live card that floats by how recently you used it and sinks when you don't. Cards show one live chip each (a failing CI run, a price drop, media time, unread count, an HTTP error).
+- **Finding your pages.** Type in ⌘K to jump to any open page by title or address, in any thread. ⇧⌘A lists every column in the thread, and ⌥⌘← / ⌥⌘→ move between columns (Alt+Shift+← / → on Windows and Linux).
+- **Site widths.** Give a site a minimum column width (`github.com/*` → 800), from View ▸ Keep This Width on This Site or Settings ▸ General.
+- **Local files.** ⌘O opens a file, or type its path, and its images and styles load with it. On the Mac you can also use Finder's Open With.
 - **Moments.** ⌘D saves where you were on a page: scroll position, your selection and why you saved it. Opening a moment scrolls back and re-highlights. Moments resurface by date or when you're on their site. Wake checks saved pages in the background and tells you what changed. Moments you never open fade and archive themselves.
 - **Pop Out.** Pick any part of a page and float it, live, in its own small always-on-top panel.
 - **Apps.** Pin web apps to a slim capsule with unread badges.

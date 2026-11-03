@@ -43,6 +43,8 @@ struct PaletteRow: View {
             Favicon(url: URL(string: "https://\(result.url.host() ?? "")/favicon.ico"), host: result.host, size: 22)
         case .recent(let page):
             Favicon(url: URL(string: "https://\(page.url.host() ?? "")/favicon.ico"), host: page.url.host() ?? "", size: 22)
+        case .openPage(let page):
+            Favicon(url: page.url.isFileURL ? nil : URL(string: "https://\(page.url.host() ?? "")/favicon.ico"), host: page.url.host() ?? "", size: 22)
         case .suggestion:
             symbol("magnifyingglass")
         case .searchOnWeb:
@@ -59,10 +61,11 @@ struct PaletteRow: View {
 
     private var title: String {
         switch item {
-        case .open(let url): "Open \(url.host() ?? url.absoluteString)"
+        case .open(let url): "Open \(url.isFileURL ? url.lastPathComponent : url.host() ?? url.absoluteString)"
         case .result(let result): result.title
         case .suggestion(let text): text
         case .recent(let page): page.title.isEmpty ? (page.url.host() ?? "") : page.title
+        case .openPage(let page): page.title.isEmpty ? (page.url.isFileURL ? page.url.lastPathComponent : page.url.host() ?? "") : page.title
         case .searchOnWeb(let query): "Search \(BrowsingSettings.shared.searchName) for “\(query)”"
         }
     }
@@ -72,6 +75,8 @@ struct PaletteRow: View {
         case .open(let url): url.absoluteString
         case .result(let result): result.snippet.isEmpty ? result.host : "\(result.host) — \(result.snippet)"
         case .recent(let page): page.url.host()
+        case .openPage(let page):
+            page.threadTitle.map { "\($0) · \(page.url.absoluteString)" } ?? page.url.absoluteString
         case .suggestion, .searchOnWeb: nil
         }
     }

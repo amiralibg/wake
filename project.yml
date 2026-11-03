@@ -39,6 +39,16 @@ targets:
         # Sandboxed: Sparkle installs through its XPC launcher service.
         SUEnableInstallerLauncherService: true
         LSApplicationCategoryType: public.app-category.productivity
+        # Offered in Finder's Open With. Alternate: Wake never takes over as the default.
+        CFBundleDocumentTypes:
+          - CFBundleTypeName: Web page
+            CFBundleTypeRole: Viewer
+            LSHandlerRank: Alternate
+            LSItemContentTypes: [public.html, public.xhtml, public.svg-image]
+          - CFBundleTypeName: Document
+            CFBundleTypeRole: Viewer
+            LSHandlerRank: Alternate
+            LSItemContentTypes: [com.adobe.pdf, public.image, public.plain-text, public.json, public.xml]
         LSMinimumSystemVersion: "14.0"
         NSAppTransportSecurity:
           NSAllowsArbitraryLoadsInWebContent: true
@@ -50,6 +60,10 @@ targets:
         com.apple.security.network.client: true
         com.apple.security.files.user-selected.read-only: true
         com.apple.security.files.bookmarks.app-scope: true
+        # Local files open as in other browsers: any path, with what sits next to it.
+        # Read-only. macOS still asks once for Documents, Desktop and Downloads.
+        com.apple.security.temporary-exception.files.absolute-path.read-only:
+          - /
         # Sparkle's installer, which a sandboxed app reaches by these Mach names.
         com.apple.security.temporary-exception.mach-lookup.global-name:
           - app.wake.Wake-spks
@@ -76,7 +90,7 @@ targets:
       base:
         PRODUCT_BUNDLE_IDENTIFIER: app.wake.Wake
         # The release workflow overrides these from the git tag (v0.1.0 → 0.1.0).
-        MARKETING_VERSION: 0.3.0
+        MARKETING_VERSION: 0.4.0
         CURRENT_PROJECT_VERSION: 1
         # Verifies downloaded updates; the private half signs releases in CI.
         SPARKLE_PUBLIC_ED_KEY: Nz5xOodpSjqucdRur4bzcmCUPEaJGX4Zursfq/Q7xIg=

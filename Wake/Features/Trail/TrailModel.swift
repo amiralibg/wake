@@ -347,6 +347,18 @@ final class TrailModel {
         customWidths[page.id]
     }
 
+    /// The minimum width of the page's site, if it has one. DevTools and device
+    /// previews have sizes of their own.
+    func siteMinimumWidth(of page: BrowserPage) -> CGFloat? {
+        guard !page.isDevTools, page.device == nil, let url = page.url ?? page.requestedURL else { return nil }
+        return SiteWidthRules.shared.minimumWidth(for: url)
+    }
+
+    /// How narrow dragging or the keyboard can make a column.
+    private func resizeFloor(of page: BrowserPage?, usable: CGFloat) -> CGFloat {
+        min(max(Metrics.minResizedColumnWidth, page.flatMap(siteMinimumWidth(of:)) ?? 0), usable)
+    }
+
     enum Edge { case leading, trailing }
 
     @ObservationIgnored private var activeResize: (id: BrowserPage.ID, edge: Edge, width: CGFloat, offset: CGFloat)?
@@ -371,7 +383,7 @@ final class TrailModel {
         guard let resize = activeResize else { return }
         let usable = geometry.usableWidth
         guard usable > 0 else { return }
-        let minimum = min(Metrics.minResizedColumnWidth, usable)
+        let minimum = resizeFloor(of: columns.first { $0.id == resize.id }, usable: usable)
         let width = min(max(resize.width + (resize.edge == .trailing ? delta : -delta), minimum), usable)
         customWidths[resize.id] = width / usable
         // Dragging the leading edge: the columns before it move out of the way.
@@ -408,7 +420,7 @@ final class TrailModel {
         let usable = geometry.usableWidth
         guard usable > 0 else { return }
         let current = geometry.width(of: focusedIndex) / usable
-        let minimum = min(Metrics.minResizedColumnWidth / usable, 1)
+        let minimum = resizeFloor(of: page, usable: usable) / usable
         withAnimation(.trail) {
             customWidths[page.id] = min(max(current + step, minimum), 1)
             restingOffset = nil

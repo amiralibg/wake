@@ -67,12 +67,42 @@ function isLocalHost(host: string): boolean {
   return octets.length === 4 && octets.every((o) => /^\d{1,3}$/.test(o) && Number(o) <= 255);
 }
 
+/** A path from the file dialog or typed in, as a `file:` URL. */
+export function fileURLFromPath(path: string): string {
+  const slashes = path.replace(/\\/g, '/');
+  const absolute = slashes.startsWith('/') ? slashes : `/${slashes}`;
+  const encoded = absolute
+    .split('/')
+    .map((part) => (/^[a-zA-Z]:$/.test(part) ? part : encodeURIComponent(part)))
+    .join('/');
+  return `file://${encoded}`;
+}
+
+// Other text starting with a slash stays a search ("/r/swift" isn't a file).
+const FILE_ROOTS = ['/home/', '/tmp/', '/mnt/', '/media/', '/opt/', '/usr/', '/var/', '/run/', '/srv/', '/root/'];
+
+/** `file:` URLs and absolute paths; a recognised path never goes to search suggestions. */
+function fileURLFromInput(input: string): string | null {
+  let text = input;
+  const quote = text[0];
+  if (text.length > 1 && (quote === "'" || quote === '"') && text.endsWith(quote)) text = text.slice(1, -1);
+  if (/^file:/i.test(text)) return safeURL(text);
+  if (/^[a-zA-Z]:[\\/]/.test(text)) return fileURLFromPath(text);
+  // A path pasted from a terminal escapes its spaces.
+  text = text.replace(/\\ /g, ' ');
+  return FILE_ROOTS.some((root) => text.startsWith(root)) ? fileURLFromPath(text) : null;
+}
+
 /** Whether typed text is an address (and which), or a search. */
 export function urlFromInput(text: string): string | null {
   const input = text.trim();
-  if (!input || /\s/.test(input)) return null;
+  if (!input) return null;
+  // Paths may contain spaces, so they're checked first.
+  const file = fileURLFromInput(input);
+  if (file) return file;
+  if (/\s/.test(input)) return null;
   const scheme = /^([a-z][a-z0-9+.-]*):/i.exec(input)?.[1]?.toLowerCase();
-  if (scheme && ['http', 'https', 'file', 'about'].includes(scheme)) {
+  if (scheme && ['http', 'https', 'about'].includes(scheme)) {
     try {
       return new URL(input).href;
     } catch {

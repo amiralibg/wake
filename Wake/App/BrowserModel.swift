@@ -49,6 +49,8 @@ final class BrowserModel {
     var isImportingBrowserData = false
     /// After ⌃W, single keys move between columns (see `ColumnMode`).
     var isColumnModeActive = false
+    /// The list of every column in the thread, from the toolbar's +N or ⇧⌘A.
+    var isColumnListOpen = false
     @ObservationIgnored var columnModeTimeout: Task<Void, Never>?
 
     @ObservationIgnored private let store = ThreadStore.shared
@@ -89,6 +91,7 @@ final class BrowserModel {
             : nil
         thread = resumable.map(BrowserThread.init(record:)) ?? BrowserThread()
         palette.recents = { [weak self] in self?.recents ?? [] }
+        palette.openPages = { [weak self] in self?.openPages ?? [] }
         activate(thread)
         apps.configurePage = { [weak self] page in
             // A pinned app is a place you return to; what you open from it joins the trail.
@@ -108,6 +111,69 @@ final class BrowserModel {
 
     var recents: [RecentPage] {
         HistoryStore.shared.recentVisits().map { RecentPage(url: $0.url, title: $0.title, visitedAt: $0.visitedAt) }
+    }
+
+    /// Everything open, for ⌘K: this window's threads, other windows' threads, then
+    /// threads that aren't loaded, whose columns come from the store.
+    var openPages: [OpenPage] {
+        Self.all.removeAll { $0.value == nil }
+        let others = Self.all.compactMap(\.value).filter { $0 !== self }
+        var seen = Set<UUID>()
+        var pages: [OpenPage] = []
+        for model in [self] + others {
+            for live in [model.thread] + model.backgroundThreads where live.isLoaded {
+                seen.insert(live.id)
+                let label = live === thread ? nil : live.title
+                for (index, column) in live.trail.columns.enumerated()
+                where !column.isDevTools && !column.isEphemeral && column !== page {
+                    guard let url = column.url ?? column.requestedURL else { continue }
+                    pages.append(OpenPage(threadID: live.id, pageID: column.id, columnIndex: index, url: url, title: column.displayTitle, threadTitle: label))
+                }
+            }
+        }
+        for record in store.unresolvedThreads() where !seen.contains(record.id) {
+            let label = record.customTitle ?? record.title
+            for (index, column) in record.orderedColumns.enumerated() {
+                pages.append(OpenPage(threadID: record.id, pageID: nil, columnIndex: index, url: column.url, title: column.title, threadTitle: label))
+            }
+        }
+        return pages
+    }
+
+    /// Goes to a column from ⌘K, bringing its thread (or window) forward.
+    func jump(to target: OpenPage) {
+        hidePalette()
+        let owner = store.owner(of: target.threadID).flatMap { $0 === self ? nil : $0 } ?? self
+        if owner === self { switchToThread(id: target.threadID) } else { owner.window?.makeKeyAndOrderFront(nil) }
+        if let id = target.pageID, owner.trail.columns.contains(where: { $0.id == id }) {
+            owner.trail.focus(id: id)
+        } else {
+            owner.trail.focus(target.columnIndex)
+        }
+    }
+
+    /// File ▸ Open File.
+    func openLocalFile() {
+        guard let file = LocalFileAccess.chooseFileToOpen() else { return }
+        openFiles([file])
+    }
+
+    /// Files handed to Wake by a panel, Finder or a drop, each in its own column.
+    func openFiles(_ files: [URL]) {
+        hidePalette()
+        for file in files { trail.open(file) }
+    }
+
+    /// In Zen the toolbar comes in first: the list hangs from it.
+    func toggleColumnList() {
+        if isZen { revealZenChrome() }
+        isColumnListOpen.toggle()
+    }
+
+    /// Keeps this column's current width as the minimum for its site.
+    func keepWidthForSite(of page: BrowserPage) {
+        guard let url = page.url, let index = trail.columns.firstIndex(where: { $0 === page }) else { return }
+        SiteWidthRules.shared.remember(width: trail.geometry.width(of: index), for: url)
     }
 
     /// ⌘W closes the innermost thing: an overlay, the showing app, then the focused
@@ -193,6 +259,7 @@ final class BrowserModel {
         case .open(let url): open(url)
         case .result(let result): open(result.url)
         case .recent(let recent): open(recent.url)
+        case .openPage(let target): jump(to: target)
         // With palette results, a suggestion refines them in place; without, it searches.
         case .suggestion(let text):
             if SearchKeyStore.hasBraveAPIKey { palette.query = text } else { open(BrowsingSettings.shared.searchURL(for: text)) }

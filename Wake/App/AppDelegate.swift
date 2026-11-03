@@ -26,6 +26,24 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         }
     }
 
+    /// Finder's Open With, or a file dropped on the Dock icon. At launch there may be
+    /// no window yet, so this waits for one (and asks for one if none comes).
+    func application(_ application: NSApplication, open urls: [URL]) {
+        let files = urls.filter(\.isFileURL)
+        guard !files.isEmpty else { return }
+        Task { @MainActor in
+            for attempt in 0..<50 {
+                if let browser = BrowserModel.active {
+                    browser.openFiles(files)
+                    NSApp.activate(ignoringOtherApps: true)
+                    return
+                }
+                if attempt == 8 { Self.openWindowIfNeeded() }
+                try? await Task.sleep(for: .milliseconds(100))
+            }
+        }
+    }
+
     func applicationShouldHandleReopen(_ sender: NSApplication, hasVisibleWindows flag: Bool) -> Bool {
         if !flag { Self.openWindowIfNeeded() }
         return true
