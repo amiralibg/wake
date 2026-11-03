@@ -592,3 +592,20 @@
 .form-row .text-field {
   flex: 1;
 }
+
+.site-width-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 14px;
+}
+
+.site-width-row .text-field {
+  flex: 1;
+  min-width: 0;
+}
+
+.site-width-row .site-width-value {
+  flex: 0 0 80px;
+  text-align: right;
+}

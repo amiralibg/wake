@@ -21,7 +21,8 @@ struct TrailView: View {
                 columnsPerScreen: appearance.pageWidth.columnsPerScreen,
                 customFractions: trail.columns.map { page in
                     fraction(of: page, usable: usable, stageHeight: proxy.size.height)
-                }
+                },
+                minimums: trail.columns.map { trail.siteMinimumWidth(of: $0) }
             )
             let offset = trail.dragOffset
                 ?? trail.restingOffset.map(geometry.clamped)

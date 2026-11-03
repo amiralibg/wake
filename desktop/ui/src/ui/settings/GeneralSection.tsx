@@ -3,16 +3,18 @@ import type { BrowserModel } from '../../model/browser';
 import { settings } from '../../model/settings';
 import { updater } from '../../model/updater';
 import { relativeTime } from '../../model/deck';
+import { siteWidths } from '../../model/site-widths';
 import { Group, Row, Segmented, Switch } from './components';
 
 const SHORTCUTS: [string, string][] = [
   ['Open the Deck and search', 'Ctrl+K'],
-  ['New column', 'Ctrl+T'],
+  ['New column · open a file', 'Ctrl+T  Ctrl+O'],
   ['Go to address in this column', 'Ctrl+L'],
   ['Close column · close window', 'Ctrl+W  Ctrl+Shift+W'],
   ['Reopen closed column', 'Ctrl+Shift+T'],
   ['Duplicate column', 'Ctrl+Shift+D'],
-  ['Previous / next column', 'Ctrl+[  Ctrl+]'],
+  ['Previous / next column', 'Ctrl+[  Ctrl+]  Alt+Shift+←  Alt+Shift+→'],
+  ['Show all columns', 'Ctrl+Shift+A'],
   ['Cycle columns', 'Ctrl+Tab  Ctrl+Shift+Tab'],
   ['Previous / next column with a mouse', 'Shift + scroll'],
   ['Column mode, then focus · move · jump', 'Alt+W  h l  H L  1–9'],
@@ -74,6 +76,7 @@ export const GeneralSection = observer(function GeneralSection({ browser }: { br
           />
         </Row>
       </Group>
+      <SiteWidthsGroup />
       <UpdatesGroup />
       <Group>
         <Row label="Welcome tour" detail="The trail, your look, search and shortcuts, one screen each.">
@@ -97,6 +100,46 @@ export const GeneralSection = observer(function GeneralSection({ browser }: { br
         ))}
       </Group>
     </>
+  );
+});
+
+/** Minimum column widths by address pattern. */
+const SiteWidthsGroup = observer(function SiteWidthsGroup() {
+  return (
+    <Group title="Site widths">
+      <Row
+        label="Minimum column width"
+        detail="For sites that need room. * matches anything: github.com/* covers all of GitHub. To add the site you're on, right-click its chip in the toolbar."
+      >
+        <button className="button" onClick={() => siteWidths.add()}>
+          Add Site
+        </button>
+      </Row>
+      {siteWidths.rules.map((rule) => (
+        <div key={rule.id} className="site-width-row">
+          <input
+            className="text-field"
+            value={rule.pattern}
+            placeholder="example.com/*"
+            aria-label="Address pattern"
+            spellCheck={false}
+            onChange={(e) => siteWidths.update(rule.id, { pattern: e.target.value })}
+          />
+          <input
+            className="text-field site-width-value"
+            type="number"
+            min={0}
+            value={rule.minWidth}
+            aria-label="Minimum width in pixels"
+            onChange={(e) => siteWidths.update(rule.id, { minWidth: Number(e.target.value) || 0 })}
+          />
+          <span className="secondary">px</span>
+          <button className="button small" onClick={() => siteWidths.remove(rule.id)} aria-label={`Remove ${rule.pattern}`}>
+            Remove
+          </button>
+        </div>
+      ))}
+    </Group>
   );
 });
 

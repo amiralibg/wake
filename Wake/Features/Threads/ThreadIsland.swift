@@ -6,6 +6,7 @@ struct ThreadIsland: View {
     @State private var isShowingSwitcher = false
 
     var body: some View {
+        @Bindable var browser = browser
         // Narrow windows: the island gives up detail, widest first, instead of running
         // under the address bar (the toolbar offers it only the room left of centre).
         ViewThatFits(in: .horizontal) {
@@ -13,6 +14,17 @@ struct ThreadIsland: View {
             island(threadTitleWidth: 110, showsColumnTitle: false)
             island(threadTitleWidth: nil, showsColumnTitle: false)
             island(threadTitleWidth: nil, showsColumnTitle: false, showsColumns: false)
+        }
+        .popover(isPresented: $browser.isColumnListOpen, arrowEdge: .bottom) {
+            ColumnList(
+                columns: browser.trail.columns,
+                focusedID: browser.page?.id,
+                onSelect: { id in
+                    browser.isColumnListOpen = false
+                    browser.trail.focus(id: id)
+                },
+                onClose: { browser.trail.close($0) }
+            )
         }
     }
 
@@ -58,7 +70,9 @@ struct ThreadIsland: View {
                     onSelect: browser.trail.focus(id:),
                     onClose: browser.trail.close,
                     onPin: browser.pin,
-                    showsFocusedTitle: showsColumnTitle
+                    showsFocusedTitle: showsColumnTitle,
+                    onShowAll: browser.toggleColumnList,
+                    onKeepWidth: browser.keepWidthForSite(of:)
                 )
                 .padding(.trailing, 3)
             }

@@ -20,6 +20,8 @@ final class PaletteModel {
 
     /// Supplied by the browser; recents live there because pages report them.
     @ObservationIgnored var recents: () -> [RecentPage] = { [] }
+    /// Every column open anywhere except the one in focus, nearest first.
+    @ObservationIgnored var openPages: () -> [OpenPage] = { [] }
     @ObservationIgnored private let service = SearchService()
     @ObservationIgnored private var searchTask: Task<Void, Never>?
 
@@ -27,8 +29,12 @@ final class PaletteModel {
 
     var sections: [PaletteSection] {
         let query = trimmedQuery
+        let matchingPages = query.isEmpty ? [] : openPages().filter { Self.matches(query, title: $0.title, url: $0.url) }
+        let openURLs = Set(matchingPages.map(\.url))
         let matchingRecents = recents()
             .filter { query.isEmpty || $0.title.localizedCaseInsensitiveContains(query) || $0.url.absoluteString.localizedCaseInsensitiveContains(query) }
+            // Already listed as open: going back to it beats opening it twice.
+            .filter { !openURLs.contains($0.url) }
             .prefix(query.isEmpty ? 8 : 3)
             .map(PaletteItem.recent)
 
@@ -41,7 +47,12 @@ final class PaletteModel {
         let address = URLInput.url(from: query)
         if let address {
             sections.append(PaletteSection(title: nil, items: [.open(address)]))
-        } else if results.isEmpty {
+        }
+        // Words that match an open page go to it on ↩; the web search is one row down.
+        if !matchingPages.isEmpty {
+            sections.append(PaletteSection(title: "Open pages", items: matchingPages.prefix(6).map(PaletteItem.openPage)))
+        }
+        if address == nil, results.isEmpty {
             // ↩ on typed words searches, as in every browser's address bar.
             sections.append(PaletteSection(title: nil, items: [.searchOnWeb(query)]))
         }
@@ -80,6 +91,14 @@ final class PaletteModel {
         suggestions = []
         selection = 0
         isSearching = false
+    }
+
+    /// Every word has to appear in the title or the address.
+    private static func matches(_ query: String, title: String, url: URL) -> Bool {
+        let address = url.absoluteString.removingPercentEncoding ?? url.absoluteString
+        return query.split(whereSeparator: \.isWhitespace).allSatisfy {
+            title.localizedCaseInsensitiveContains($0) || address.localizedCaseInsensitiveContains($0)
+        }
     }
 
     private func refresh() {

@@ -459,3 +459,59 @@
 .toolbar.is-floating .window-button {
   border-radius: 999px;
 }
+
+button.overflow-badge {
+  height: 24px;
+  border-radius: 12px;
+}
+
+button.overflow-badge:hover {
+  background: var(--fill-hover);
+}
+
+.column-list {
+  position: fixed;
+  width: 340px;
+  max-height: 440px;
+  overflow-y: auto;
+  padding: 6px;
+}
+
+.column-list-row {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding-right: 6px;
+  border-radius: 7px;
+}
+
+.column-list-row:hover {
+  background: var(--fill-hover);
+}
+
+.column-list-row.is-focused {
+  background: var(--fill-hover);
+}
+
+.column-list-row.is-focused .switcher-row-title {
+  font-weight: 600;
+}
+
+.column-list-page {
+  display: flex;
+  flex: 1;
+  align-items: center;
+  gap: 10px;
+  min-width: 0;
+  padding: 6px 8px;
+  text-align: left;
+}
+
+.column-list-close {
+  opacity: 0;
+}
+
+.column-list-row:hover .column-list-close,
+.column-list-close:focus-visible {
+  opacity: 1;
+}

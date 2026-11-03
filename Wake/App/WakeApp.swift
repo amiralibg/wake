@@ -23,5 +23,7 @@ struct WakeApp: App {
         .windowStyle(.hiddenTitleBar)
         .defaultSize(width: 1352, height: 832)
         .commands { BrowserCommands() }
+        // Opened files become columns (`AppDelegate`), not extra windows.
+        .handlesExternalEvents(matching: [])
     }
 }

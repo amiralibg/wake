@@ -5,6 +5,7 @@
 // Default widths: one column fills the stage; with more, the stage is split into
 // `columnsPerScreen` (2 for Balanced), and anything beyond that scrolls. A column
 // the user resized keeps its own share of the stage. A lone column always fills it.
+// A site's minimum width beats all of these, up to the stage's own width.
 
 export const Metrics = {
   toolbarHeight: 56,
@@ -29,6 +30,7 @@ export class TrailGeometry {
     readonly inset = 0,
     columnsPerScreen = 2,
     customFractions: (number | null)[] = [],
+    minimums: (number | null)[] = [],
   ) {
     const usable = Math.max(0, stageWidth - inset * 2);
     const split = Math.min(customFractions.length, columnsPerScreen);
@@ -39,9 +41,11 @@ export class TrailGeometry {
       this.widths = [usable];
       return;
     }
-    this.widths = customFractions.map((fraction) =>
-      fraction == null ? Math.min(usable, Math.max(minimum, standard)) : Math.min(usable, Math.max(resizedMinimum, fraction * usable)),
-    );
+    this.widths = customFractions.map((fraction, index) => {
+      const width = fraction == null ? Math.min(usable, Math.max(minimum, standard)) : Math.min(usable, Math.max(resizedMinimum, fraction * usable));
+      const floor = minimums[index];
+      return floor == null ? width : Math.min(usable, Math.max(width, floor));
+    });
   }
 
   get count() {

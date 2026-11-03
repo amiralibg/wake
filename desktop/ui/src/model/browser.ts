@@ -6,7 +6,9 @@ import { makeAutoObservable, runInAction } from 'mobx';
 import { host } from '../host/host';
 import { settings, SINK_AFTER_DAYS } from './settings';
 import { BrowserThread, threadStore, type ThreadRecord } from './threads';
-import { PaletteModel, type PaletteItem, type PaletteTarget, type RecentPage } from './palette';
+import { PaletteModel, type OpenPage, type PaletteItem, type PaletteTarget, type RecentPage } from './palette';
+import { fileURLFromPath } from './search';
+import { siteWidths } from './site-widths';
 import { PinnedAppsModel, type PinnedApp } from './apps';
 import { history } from './history';
 import { Page, isLocal, samePage, hostOf } from './page';
@@ -72,6 +74,8 @@ export class BrowserModel {
   isOnboarding = !settings.get('onboarding.completed', false);
 
   private backgroundThreads: BrowserThread[] = [];
+  /** The list of every column in the thread, from the toolbar's +N or Ctrl+Shift+A. */
+  isColumnListOpen = false;
   private discardTimers = new Map<string, number>();
   private peekTimer = 0;
   private capsuleTimer = 0;
@@ -93,6 +97,7 @@ export class BrowserModel {
       watcher: false,
     });
     this.palette.recents = () => this.recents;
+    this.palette.openPages = () => this.openPages;
     this.apps.configurePage = (page) => {
       // A pinned app is a place you return to; what you open from it joins the trail.
       page.onOpenLink = (url, background) => this.openFromApp(url, background);
@@ -137,6 +142,77 @@ export class BrowserModel {
 
   get recents(): RecentPage[] {
     return history.recent.map((v) => ({ url: v.url, title: v.title, visitedAt: v.visitedAt }));
+  }
+
+  /**
+   * Everything open, for Ctrl+K: this window's threads, then saved threads, whose
+   * columns come from the store (other windows' threads included: each window runs
+   * its own UI, so their live pages aren't reachable from here).
+   */
+  get openPages(): OpenPage[] {
+    const seen = new Set<string>();
+    const pages: OpenPage[] = [];
+    for (const live of [this.thread, ...this.backgroundThreads]) {
+      if (!live.isLoaded) continue;
+      seen.add(live.id);
+      const label = live === this.thread ? null : live.title;
+      live.trail.columns.forEach((column, index) => {
+        const url = column.address;
+        if (!url || column.isDevTools || column.isEphemeral || column === this.page) return;
+        pages.push({ threadID: live.id, pageID: column.id, columnIndex: index, url, title: column.displayTitle, threadTitle: label });
+      });
+    }
+    for (const record of threadStore.unresolvedThreads) {
+      if (seen.has(record.id)) continue;
+      const label = record.customTitle ?? record.title;
+      [...record.columns]
+        .sort((a, b) => a.order - b.order)
+        .forEach((column, index) => {
+          pages.push({ threadID: record.id, pageID: null, columnIndex: index, url: column.url, title: column.title, threadTitle: label });
+        });
+    }
+    return pages;
+  }
+
+  /**
+   * Goes to a column from Ctrl+K, bringing its thread forward.
+   * Limitation: a thread shown in another window comes forward at that window's
+   * focused column, since the column is in another window's UI.
+   */
+  async jumpTo(target: OpenPage) {
+    this.hidePalette();
+    const owner = threadStore.owner(target.threadID);
+    if (owner != null && owner !== this.windowID) {
+      host.send('threads.focusOwner', { thread: target.threadID });
+      return;
+    }
+    await this.switchToThread(target.threadID);
+    const index = target.pageID ? this.trail.columns.findIndex((c) => c.id === target.pageID) : -1;
+    this.trail.focus(index >= 0 ? index : target.columnIndex);
+  }
+
+  /** Ctrl+O. */
+  async openLocalFile() {
+    const path = await host.call<string | null>('dialog.file', { title: 'Open File' });
+    if (!path) return;
+    this.hidePalette();
+    this.trail.open(fileURLFromPath(path));
+  }
+
+  toggleColumnList() {
+    if (this.isZen) this.revealZenChrome();
+    this.isColumnListOpen = !this.isColumnListOpen;
+  }
+
+  closeColumnList() {
+    this.isColumnListOpen = false;
+  }
+
+  /** Keeps this column's current width as the minimum for its site. */
+  keepWidthForSite(page: Page) {
+    const index = this.trail.columns.indexOf(page);
+    if (index < 0 || !page.url) return;
+    siteWidths.remember(this.trail.geometry.width(index), page.url);
   }
 
   // MARK: What covers the pages
@@ -282,6 +358,8 @@ export class BrowserModel {
         return this.openURL(item.result.url);
       case 'recent':
         return this.openURL(item.page.url);
+      case 'openPage':
+        return void this.jumpTo(item.page);
       case 'suggestion':
         // With palette results, a suggestion refines them in place; without, it searches.
         if (settings.braveAPIKey) this.palette.setQuery(item.text);

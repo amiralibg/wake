@@ -65,7 +65,11 @@ final class PopOut: NSObject, Identifiable {
         controller.add(PopOutBridge(owner: self), contentWorld: .defaultClient, name: Self.handler)
         webView.navigationDelegate = self
         webView.isInspectable = true
-        webView.load(URLRequest(url: pick.url))
+        if pick.url.isFileURL {
+            webView.loadFileURL(pick.url, allowingReadAccessTo: LocalFileAccess.readAccessRoot(for: pick.url))
+        } else {
+            webView.load(URLRequest(url: pick.url))
+        }
     }
 
     var host: String {

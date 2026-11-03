@@ -124,6 +124,14 @@ function describe(item: PaletteItem) {
       const h = hostOf(item.page.url);
       return { icon: <Favicon host={h} size={22} />, title: item.page.title || h, subtitle: h };
     }
+    case 'openPage': {
+      const h = hostOf(item.page.url);
+      return {
+        icon: <Favicon host={h} size={22} />,
+        title: item.page.title || h,
+        subtitle: item.page.threadTitle ? `${item.page.threadTitle} · ${item.page.url}` : item.page.url,
+      };
+    }
     case 'suggestion':
       return { icon: <Search size={14} className="secondary" />, title: item.text, subtitle: null };
     case 'searchOnWeb':

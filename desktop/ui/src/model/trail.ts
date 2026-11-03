@@ -6,6 +6,7 @@ import { makeAutoObservable } from 'mobx';
 import { Page } from './page';
 import { TrailGeometry, Metrics } from './geometry';
 import { settings } from './settings';
+import { siteWidths } from './site-widths';
 import { type DevicePreset, type DeviceFrame } from './device';
 
 export type Edge = 'leading' | 'trailing';
@@ -357,6 +358,18 @@ export class TrailModel {
     return this.customWidths.get(page.id) ?? null;
   }
 
+  /** The minimum width of the page's site, if it has one. DevTools and device previews have sizes of their own. */
+  siteMinimumWidth(page: Page): number | null {
+    if (page.isDevTools || page.device) return null;
+    return siteWidths.minimumWidth(page.address);
+  }
+
+  /** How narrow dragging or the keyboard can make a column. */
+  private resizeFloor(page: Page | undefined, usable: number) {
+    const site = page ? this.siteMinimumWidth(page) : null;
+    return Math.min(Math.max(Metrics.minResizedColumnWidth, site ?? 0), usable);
+  }
+
   /** Where the trail is showing right now. */
   get displayedOffset(): number {
     return this.dragOffset ?? (this.restingOffset != null ? this.geometry.clamped(this.restingOffset) : this.geometry.targetOffset(this.focusedIndex, this.focusSpan));
@@ -376,7 +389,7 @@ export class TrailModel {
     if (!r) return;
     const usable = this.geometry.usableWidth;
     if (usable <= 0) return;
-    const minimum = Math.min(Metrics.minResizedColumnWidth, usable);
+    const minimum = this.resizeFloor(this.columns.find((c) => c.id === r.id), usable);
     const width = Math.min(Math.max(r.width + (r.edge === 'trailing' ? delta : -delta), minimum), usable);
     this.customWidths.set(r.id, width / usable);
     // Dragging the leading edge: the columns before it move out of the way.
@@ -411,7 +424,7 @@ export class TrailModel {
     const usable = this.geometry.usableWidth;
     if (usable <= 0) return;
     const current = this.geometry.width(this.focusedIndex) / usable;
-    const minimum = Math.min(Metrics.minResizedColumnWidth / usable, 1);
+    const minimum = this.resizeFloor(page, usable) / usable;
     this.customWidths.set(page.id, Math.min(Math.max(current + step, minimum), 1));
     this.restingOffset = null;
     this.onChange();

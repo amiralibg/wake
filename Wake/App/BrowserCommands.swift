@@ -30,6 +30,8 @@ struct BrowserCommands: Commands {
                 .keyboardShortcut("n", modifiers: [.command, .shift])
             Button("Open Location…") { browser?.showPalette(target: .currentColumn) }
                 .keyboardShortcut("l", modifiers: .command)
+            Button("Open File…") { browser?.openLocalFile() }
+                .keyboardShortcut("o", modifiers: .command)
             Button("Reopen Closed Column") { browser?.trail.reopenClosed() }
                 .keyboardShortcut("t", modifiers: [.command, .shift])
             Button("Duplicate Column") { browser?.trail.duplicateFocused() }
@@ -80,6 +82,14 @@ struct BrowserCommands: Commands {
                 .keyboardShortcut("-", modifiers: [.command, .option])
             Button("Default Column Width") { if let page = browser?.page { browser?.trail.resetWidth(of: page) } }
                 .keyboardShortcut("0", modifiers: [.command, .option])
+            if let page = browser?.webPage, let url = page.url, SiteWidthRules.canHaveRule(url) {
+                if SiteWidthRules.shared.minimumWidth(for: url) == nil {
+                    Button("Keep This Width on This Site") { browser?.keepWidthForSite(of: page) }
+                        .disabled((browser?.trail.columns.count ?? 0) < 2)
+                } else {
+                    Button("Forget Width for This Site") { SiteWidthRules.shared.forget(url) }
+                }
+            }
         }
 
         CommandMenu("Go") {
@@ -90,6 +100,12 @@ struct BrowserCommands: Commands {
                 .keyboardShortcut("[", modifiers: .command)
             Button("Next Column") { browser?.trail.focusNext() }
                 .keyboardShortcut("]", modifiers: .command)
+            Button("Column to the Left") { browser?.trail.focusPrevious() }
+                .keyboardShortcut(.leftArrow, modifiers: [.command, .option])
+            Button("Column to the Right") { browser?.trail.focusNext() }
+                .keyboardShortcut(.rightArrow, modifiers: [.command, .option])
+            Button("Show All Columns") { browser?.toggleColumnList() }
+                .keyboardShortcut("a", modifiers: [.command, .shift])
             Button("Cycle Columns") { browser?.trail.cycleFocus(forward: true) }
                 .keyboardShortcut(.tab, modifiers: .control)
             Button("Cycle Columns Backwards") { browser?.trail.cycleFocus(forward: false) }

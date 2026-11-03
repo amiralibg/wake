@@ -67,6 +67,13 @@ struct MainWindowView: View {
         .onEscapeKey(isActive: browser.hasOverlay, perform: browser.dismissOverlays)
         .columnModeKeys(browser)
         .sheet(isPresented: $browser.isImportingBrowserData) { ImportSheet() }
+        // Limitation: over a page the web view takes the drop itself; this covers the
+        // toolbar, the gaps between pages and an empty window.
+        .dropDestination(for: URL.self) { urls, _ in
+            let files = urls.filter(\.isFileURL)
+            browser.openFiles(files)
+            return !files.isEmpty
+        }
         .animation(.chrome, value: browser.showsAppCapsule)
         .environment(browser)
         .environment(\.isZen, browser.isZen)

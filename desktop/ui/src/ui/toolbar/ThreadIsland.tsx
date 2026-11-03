@@ -2,12 +2,14 @@
 // the thread (opens the switcher) and its trail of columns as favicon chips.
 
 import { observer } from 'mobx-react-lite';
-import { useEffect, useLayoutEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
-import { Layers, ChevronDown, Plus, Rows3 } from 'lucide-react';
+import { Layers, ChevronDown, Plus, Rows3, X } from 'lucide-react';
 import type { BrowserModel } from '../../model/browser';
 import type { Page } from '../../model/page';
 import { chipsFor } from '../../model/live';
+import { canHaveRule } from '../../model/site-pattern';
+import { siteWidths } from '../../model/site-widths';
 import { relativeTime } from '../../model/deck';
 import { Favicon } from '../common/Favicon';
 import { MenuItem, MenuSeparator, useContextMenu } from '../common/Menu';
@@ -65,6 +67,9 @@ export const ThreadIsland = observer(function ThreadIsland({ browser }: { browse
           <TrailStrip browser={browser} showsTitle={variant.columnTitle} />
         </>
       )}
+      {browser.isColumnListOpen && ref.current && (
+        <ColumnList browser={browser} anchor={ref.current.getBoundingClientRect()} />
+      )}
       {switcher && <ThreadSwitcher browser={browser} anchor={switcher} onClose={() => setSwitcher(null)} />}
     </div>
   );
@@ -85,7 +90,7 @@ const TrailStrip = observer(function TrailStrip({ browser, showsTitle }: { brows
   }
   return (
     <div className="trail-strip">
-      {start > 0 && <span className="overflow-badge secondary">+{start}</span>}
+      {start > 0 && <OverflowBadge browser={browser} count={start} />}
       {columns.slice(start, end).map((page) => (
         <TrailChip
           key={page.id}
@@ -97,15 +102,87 @@ const TrailStrip = observer(function TrailStrip({ browser, showsTitle }: { brows
             <>
               {page.url && !page.isDevTools && <MenuItem onSelect={() => browser.pin(page)}>Pin as App</MenuItem>}
               {page.url && <MenuItem onSelect={() => page.url && trail.open(page.url, page)}>Duplicate Column</MenuItem>}
+              {canHaveRule(page.url) && !page.isDevTools && !page.device && (
+                siteWidths.minimumWidth(page.url) == null ? (
+                  columns.length > 1 && <MenuItem onSelect={() => browser.keepWidthForSite(page)}>Keep This Width on This Site</MenuItem>
+                ) : (
+                  <MenuItem onSelect={() => page.url && siteWidths.forget(page.url)}>Forget Width for This Site</MenuItem>
+                )
+              )}
               <MenuSeparator />
               <MenuItem onSelect={() => trail.close(page)}>Close Column</MenuItem>
             </>
           ))}
         />
       ))}
-      {end < columns.length && <span className="overflow-badge secondary">+{columns.length - end}</span>}
+      {end < columns.length && <OverflowBadge browser={browser} count={columns.length - end} />}
       {menu.element}
     </div>
+  );
+});
+
+const OverflowBadge = observer(function OverflowBadge({ browser, count }: { browser: BrowserModel; count: number }) {
+  const label = `Show all ${browser.trail.columns.length} columns (Ctrl+Shift+A)`;
+  return (
+    <button className="overflow-badge secondary" title={label} aria-label={label} onClick={() => browser.toggleColumnList()}>
+      +{count}
+    </button>
+  );
+});
+
+/** Every column in the thread, however many the toolbar has room for. */
+const ColumnList = observer(function ColumnList({ browser, anchor }: { browser: BrowserModel; anchor: DOMRect }) {
+  const ref = useRef<HTMLDivElement>(null);
+  const trail = browser.trail;
+  const onClose = useCallback(() => browser.closeColumnList(), [browser]);
+  useEffect(() => {
+    browser.menuOpened();
+    return () => browser.menuClosed();
+  }, [browser]);
+  useEffect(() => {
+    const down = (event: PointerEvent) => {
+      if (!ref.current?.contains(event.target as Node)) onClose();
+    };
+    const key = (event: KeyboardEvent) => {
+      if (event.key !== 'Escape') return;
+      event.stopPropagation();
+      onClose();
+    };
+    const id = setTimeout(() => window.addEventListener('pointerdown', down, true));
+    window.addEventListener('keydown', key, true);
+    return () => {
+      clearTimeout(id);
+      window.removeEventListener('pointerdown', down, true);
+      window.removeEventListener('keydown', key, true);
+    };
+  }, [onClose]);
+  useEffect(() => {
+    ref.current?.querySelector('.is-focused')?.scrollIntoView({ block: 'nearest' });
+  }, []);
+  return createPortal(
+    <div className="popover glass-strong column-list" ref={ref} style={{ left: anchor.left, top: anchor.bottom + 8 }}>
+      {trail.columns.map((page) => (
+        <div key={page.id} className={`column-list-row ${page === trail.focused ? 'is-focused' : ''}`}>
+          <button
+            className="column-list-page"
+            onClick={() => {
+              onClose();
+              trail.focusID(page.id);
+            }}
+          >
+            {page.isDevTools ? <Rows3 size={16} className="secondary" /> : <Favicon url={page.faviconURL} host={page.host} size={16} />}
+            <span className="switcher-row-text">
+              <span className="truncate switcher-row-title">{page.displayTitle}</span>
+              {page.host && <span className="truncate secondary switcher-row-meta">{page.host}</span>}
+            </span>
+          </button>
+          <button className="icon-button column-list-close" title="Close Column" aria-label={`Close ${page.displayTitle}`} onClick={() => trail.close(page)}>
+            <X size={12} />
+          </button>
+        </div>
+      ))}
+    </div>,
+    document.body,
   );
 });
 
