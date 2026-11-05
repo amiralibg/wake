@@ -801,6 +801,8 @@ export class BrowserModel {
   // MARK: Wheel over pages (shared/scripts/trail-wheel.js)
 
   private panVelocity = { last: 0, dx: 0 };
+  private pendingPan = 0;
+  private panFrame = 0;
 
   trailWheel(message: { type: string; dx?: number; direction?: number }) {
     if (this.coversPages) return;
@@ -813,16 +815,29 @@ export class BrowserModel {
       case 'trailPan': {
         const now = performance.now();
         const dx = message.dx ?? 0;
-        const dt = Math.max(1, now - this.panVelocity.last);
-        this.panVelocity = { last: now, dx: (-dx / dt) * 1000 };
-        this.trail.scroll(-dx);
+        // Events can arrive bunched when the system is busy. The floor on dt and the
+        // averaging keep one bunch from reading as a flick that skips columns.
+        const dt = Math.max(8, now - this.panVelocity.last);
+        this.panVelocity = { last: now, dx: this.panVelocity.dx * 0.6 + ((-dx / dt) * 1000) * 0.4 };
+        // At most one trail update, and one Stage render, per frame.
+        this.pendingPan += dx;
+        if (!this.panFrame) this.panFrame = requestAnimationFrame(() => this.flushPan());
         break;
       }
       case 'trailPanEnd':
+        this.flushPan();
         this.trail.endScroll(this.panVelocity.dx);
         this.panVelocity = { last: 0, dx: 0 };
         break;
     }
+  }
+
+  private flushPan() {
+    cancelAnimationFrame(this.panFrame);
+    this.panFrame = 0;
+    const dx = this.pendingPan;
+    this.pendingPan = 0;
+    if (dx && !this.coversPages) this.trail.scroll(-dx);
   }
 
   // MARK: Moments

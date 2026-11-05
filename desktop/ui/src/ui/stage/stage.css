@@ -22,7 +22,7 @@
   top: 0;
   bottom: 0;
   left: 0;
-  will-change: transform, width;
+  will-change: transform;
   animation: column-in 260ms var(--spring);
 }
 

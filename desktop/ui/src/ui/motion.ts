@@ -7,6 +7,8 @@ import { useEffect, useRef, useState } from 'react';
 export const Springs = {
   /** Columns sliding, opening and closing. */
   trail: { response: 0.3, damping: 0.9 },
+  /** The trail following a swipe: close behind the fingers, smoothing coarse wheel input. */
+  follow: { response: 0.1, damping: 1 },
   /** The Deck and other large surfaces. */
   deck: { response: 0.34, damping: 0.86 },
   /** Toolbars, palettes, panels appearing. */
@@ -19,7 +21,7 @@ export class Spring {
   velocity = 0;
   target: number;
 
-  constructor(value: number, private readonly config = Springs.trail) {
+  constructor(value: number, public config = Springs.trail) {
     this.value = value;
     this.target = value;
   }

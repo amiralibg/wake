@@ -36,6 +36,9 @@ export interface Extra {
   rect: Rect;
 }
 
+/** A native webview's place; `r` is the corner radius it's clipped to, matching its card. */
+type Frame = { page: string; x: number; y: number; w: number; h: number; r: number };
+
 export class LayoutEngine {
   private columns = new Map<string, Column>();
   private order: string[] = [];
@@ -44,11 +47,15 @@ export class LayoutEngine {
   private frame = 0;
   private last = 0;
   private lastSent = '';
+  private layoutInFlight = false;
+  private queuedLayout: Frame[] | null = null;
   /** Stage origin in window coordinates, and its size. */
   stage: Rect = { x: 0, y: 0, w: 0, h: 0 };
   offset = new Spring(0, Springs.trail);
-  /** While true (a drag or resize), columns follow without springs. */
+  /** While true (resizing a column), columns follow without springs. */
   immediate = false;
+  /** While true (a swipe), the trail's offset follows on a stiffer spring. */
+  following = false;
   covered = false;
   /** Pages shown full-window (a video in fullscreen); everything else hides. */
   fullscreen: Page | null = null;
@@ -94,6 +101,8 @@ export class LayoutEngine {
     this.order = order;
     this.targets = targets;
     this.offset.target = offset;
+    // Only the stiffness changes, so a swipe's velocity carries into the snap that ends it.
+    this.offset.config = this.following ? Springs.follow : Springs.trail;
     for (const [id, target] of targets) {
       const column = this.columns.get(id);
       if (!column) continue;
@@ -161,8 +170,7 @@ export class LayoutEngine {
   }
 
   private sendFrames() {
-    // `r`: the corner radius the native webview is clipped to, matching its card.
-    const frames: { page: string; x: number; y: number; w: number; h: number; r: number }[] = [];
+    const frames: Frame[] = [];
     const add = (page: Page, rect: Rect, r = settings.cornerRadius) =>
       frames.push({ page: page.id, x: Math.round(rect.x), y: Math.round(rect.y), w: Math.round(rect.w), h: Math.round(rect.h), r });
 
@@ -182,7 +190,28 @@ export class LayoutEngine {
     const key = JSON.stringify(frames);
     if (key === this.lastSent) return;
     this.lastSent = key;
-    host.send('layout', { frames });
+    this.sendLayout(frames);
+  }
+
+  /**
+   * One layout at a time. If the host falls behind, frames queued in its event
+   * loop would each be applied late, and the pages would trail further and further
+   * behind the input. So the next layout waits for the last one's answer, and only
+   * the newest waiting one is sent.
+   */
+  private sendLayout(frames: Frame[]) {
+    if (this.layoutInFlight) {
+      this.queuedLayout = frames;
+      return;
+    }
+    this.layoutInFlight = true;
+    const done = () => {
+      this.layoutInFlight = false;
+      const next = this.queuedLayout;
+      this.queuedLayout = null;
+      if (next) this.sendLayout(next);
+    };
+    void host.call('layout', { frames }).then(done, done);
   }
 
   /** Whether a column's live webview is shown (else its card shows a snapshot). */
@@ -219,6 +248,7 @@ export class LayoutEngine {
 
   dispose() {
     cancelAnimationFrame(this.frame);
+    this.queuedLayout = null;
     host.send('layout', { frames: [] });
   }
 }

@@ -87,7 +87,8 @@ fn run(app: &mut App, target: &Target, window: u64, cmd: &str, msg: &Value, req:
         }
         "layout" => {
             layout(app, window, msg);
-            None
+            // The answer is what lets the UI send its next layout (see engine.ts).
+            Some(Ok(Value::Null))
         }
         "page.focus" => with_page(app, msg, |p| {
             let _ = p.webview.focus();

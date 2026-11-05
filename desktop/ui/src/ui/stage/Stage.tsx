@@ -114,7 +114,8 @@ export const Stage = observer(function Stage({ browser, engine }: { browser: Bro
   const seen = useRef(new Set<string>());
   useLayoutEffect(() => {
     engine.stage = size;
-    engine.immediate = trail.isResizing || trail.dragOffset != null;
+    engine.immediate = trail.isResizing;
+    engine.following = trail.dragOffset != null && !trail.isResizing;
     const targets = new Map<string, { x: number; w: number }>();
     const fresh = new Set<string>();
     columns.forEach((page, index) => {
