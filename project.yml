@@ -53,6 +53,13 @@ targets:
         NSAppTransportSecurity:
           NSAllowsArbitraryLoadsInWebContent: true
           NSAllowsLocalNetworking: true
+          NSExceptionDomains:
+            # Edge Add-ons serves extension packages only over plain HTTP (its HTTPS
+            # certificate doesn't match). Wake checks each package against the SHA-256
+            # Edge gives over HTTPS before installing it (ExtensionStore.download).
+            delivery.mp.microsoft.com:
+              NSIncludesSubdomains: true
+              NSExceptionAllowsInsecureHTTPLoads: true
     entitlements:
       path: Wake/Resources/Wake.entitlements
       properties:

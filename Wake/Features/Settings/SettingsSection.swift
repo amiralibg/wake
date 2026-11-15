@@ -1,7 +1,7 @@
 import SwiftUI
 
 enum SettingsSection: String, CaseIterable, Identifiable {
-    case general, search, appearance, deck, developer, privacy
+    case general, search, appearance, deck, extensions, developer, privacy
 
     var id: Self { self }
 
@@ -13,6 +13,7 @@ enum SettingsSection: String, CaseIterable, Identifiable {
         case .search: "magnifyingglass"
         case .appearance: "circle.lefthalf.filled"
         case .deck: "rectangle.on.rectangle"
+        case .extensions: "puzzlepiece.extension.fill"
         case .developer: "chevron.left.forwardslash.chevron.right"
         case .privacy: "hand.raised.fill"
         }
@@ -24,6 +25,7 @@ enum SettingsSection: String, CaseIterable, Identifiable {
         case .search: Color(nsColor: .systemOrange)
         case .appearance: Color(nsColor: .systemIndigo)
         case .deck: Color(nsColor: .systemTeal)
+        case .extensions: Color(nsColor: .systemPurple)
         case .developer: Color(white: 0.15)
         case .privacy: Color(nsColor: .systemBlue)
         }
@@ -36,6 +38,7 @@ enum SettingsSection: String, CaseIterable, Identifiable {
         case .search: ["engine", "default", "duckduckgo", "google", "brave", "bing", "ecosia", "startpage", "kagi", "perplexity", "yahoo", "custom", "suggestions", "api", "key", "results"]
         case .appearance: ["theme", "dark", "light", "accent", "color", "glass", "gap", "corner", "radius", "width", "trail", "layout"]
         case .deck: ["sink", "tabs", "waterline", "playing", "unsaved", "afloat"]
+        case .extensions: ["add-ons", "addons", "plugins", "chrome web store", "firefox", "crx", "xpi", "ad blocker", "ublock"]
         case .developer: ["editor", "cursor", "vs code", "zed", "xcode", "localhost", "ports", "devtools"]
         case .privacy: ["cookies", "data", "clear", "history", "website", "import", "chrome", "firefox", "safari", "arc"]
         }

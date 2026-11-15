@@ -31,6 +31,8 @@ struct WakeToolbar: View {
                         .modifier(IslandShadow(isOn: isFloating))
                         .transition(.scale(scale: 0.9, anchor: .trailing).combined(with: .opacity))
                 }
+                ExtensionsCapsule()
+                    .modifier(IslandShadow(isOn: isFloating))
                 ActionsCapsule()
                     .modifier(IslandShadow(isOn: isFloating))
             }

@@ -101,7 +101,7 @@ final class BrowserPage: NSObject, Identifiable {
     @ObservationIgnored private var observations: [NSKeyValueObservation] = []
 
     init(configuration: WKWebViewConfiguration = .wake()) {
-        webView = WKWebView(frame: .zero, configuration: configuration)
+        webView = BrowserWebView(frame: .zero, configuration: configuration)
         isDevTools = false
         super.init()
         webView.navigationDelegate = self
@@ -239,6 +239,7 @@ final class BrowserPage: NSObject, Identifiable {
     func setZoom(_ value: CGFloat) {
         zoom = value
         webView.pageZoom = value
+        Extensions.pageChanged(self, .zoom)
     }
 
     /// Asks the page whether a horizontal scroll at `point` (in web view coordinates)
@@ -259,7 +260,9 @@ final class BrowserPage: NSObject, Identifiable {
             guard let href = message["href"] as? String, let url = URL(string: href), mayOpen(url) else { return }
             onOpenLink?(url, message["background"] as? Bool ?? false)
         case "state":
+            let wasPlaying = isPlayingMedia
             isPlayingMedia = message["playing"] as? Bool ?? false
+            if wasPlaying != isPlayingMedia { Extensions.pageChanged(self, .audio) }
             hasUnsavedInput = message["unsaved"] as? Bool ?? false
         case "popOutPick":
             isPickingPopOut = false
@@ -274,6 +277,10 @@ final class BrowserPage: NSObject, Identifiable {
                 layoutWidth: message["layoutWidth"] as? Double ?? webView.bounds.width
             )
             PopOutController.shared.open(pick, near: webView.window)
+        case "storeInstall", "storeRemove":
+            // Only from the store's own pages: no other site can ask Wake to install.
+            guard let url, ExtensionStore.item(in: url) != nil else { return }
+            Extensions.storeButtonPressed(message)
         case "popOutCancel":
             isPickingPopOut = false
         case "live":
@@ -385,12 +392,14 @@ final class BrowserPage: NSObject, Identifiable {
                 MainActor.assumeIsolated {
                     self?.title = view.title ?? ""
                     self?.onStateChange?()
+                    if let self { Extensions.pageChanged(self, .title) }
                 }
             },
             webView.observe(\.url, options: [.initial, .new]) { [weak self] view, _ in
                 MainActor.assumeIsolated {
                     self?.url = view.url
                     self?.onStateChange?()
+                    if let self { Extensions.pageChanged(self, .url) }
                 }
             },
             webView.observe(\.estimatedProgress, options: [.new]) { [weak self] view, _ in
@@ -405,7 +414,11 @@ final class BrowserPage: NSObject, Identifiable {
                 }
             },
             webView.observe(\.isLoading, options: [.new]) { [weak self] view, _ in
-                MainActor.assumeIsolated { self?.isLoading = view.isLoading }
+                MainActor.assumeIsolated {
+                    guard let self else { return }
+                    self.isLoading = view.isLoading
+                    Extensions.pageChanged(self, .loading)
+                }
             },
             webView.observe(\.canGoBack, options: [.new]) { [weak self] view, _ in
                 MainActor.assumeIsolated { self?.canGoBack = view.canGoBack }
@@ -449,7 +462,7 @@ extension BrowserPage: WKNavigationDelegate {
         preferences.allowsContentJavaScript = !isJavaScriptDisabled
         guard let url = action.request.url, let scheme = url.scheme?.lowercased() else { return (.allow, preferences) }
         if action.navigationType == .linkActivated, !mayOpen(url) { return (.cancel, preferences) }
-        if ["http", "https", "about", "blob", "data", "file"].contains(scheme) {
+        if ["http", "https", "about", "blob", "data", "file", "webkit-extension"].contains(scheme) {
             if interceptsAsColumn(action, url: url) { return (.cancel, preferences) }
             // Before the document loads, so developer hooks are in place from its start.
             if action.targetFrame?.isMainFrame != false { updateDeveloperMode(for: url) }
@@ -488,6 +501,11 @@ extension BrowserPage: WKNavigationDelegate {
     }
 
     func webView(_ webView: WKWebView, decidePolicyFor response: WKNavigationResponse) async -> WKNavigationResponsePolicy {
+        // An extension package (AMO's "Download file", a .crx link): install, don't download.
+        if response.isForMainFrame, Extensions.isPackageResponse(response.response), let url = response.response.url {
+            Extensions.installFromWeb(url)
+            return .cancel
+        }
         if response.isForMainFrame {
             let type = response.response.mimeType?.lowercased() ?? ""
             isJSONDocument = type.contains("json")

@@ -45,6 +45,8 @@ final class BrowserModel {
     var momentsLayout: MomentsLayout = .grid
     /// The moment just saved, while its note island is up.
     var savedMoment: MomentRecord?
+    /// An extension install waiting for an answer, or why it couldn't go ahead.
+    var extensionPrompt: ExtensionInstallPrompt?
     /// The "Import from Another Browser" sheet.
     var isImportingBrowserData = false
     /// After ⌃W, single keys move between columns (see `ColumnMode`).
@@ -70,6 +72,12 @@ final class BrowserModel {
 
     @ObservationIgnored private static var all: [WeakModel] = []
     private struct WeakModel { weak var value: BrowserModel? }
+
+    /// Every open browser window.
+    static var everyWindow: [BrowserModel] {
+        all.removeAll { $0.value == nil }
+        return all.compactMap(\.value)
+    }
 
     /// The browser in the key window (or main window, while a sheet or panel is key).
     static var active: BrowserModel? {
@@ -205,6 +213,7 @@ final class BrowserModel {
 
     /// Called when the window closes: stop claiming threads and save them.
     func windowWillClose() {
+        Extensions.windowClosed(self)
         for live in [thread] + backgroundThreads {
             store.save(live)
             store.release(live.id)
@@ -667,6 +676,7 @@ final class BrowserModel {
             thread = next
         }
         activate(next)
+        Extensions.windowChanged(self)
         threadListVersion += 1
     }
 
@@ -723,7 +733,10 @@ final class BrowserModel {
             // page apps do constantly). That's worth saving, but it isn't you using the
             // thread: counted as activity, it made a background thread look like the
             // one to resume at launch, and kept it hot in the Deck.
-            if thread === self.thread { thread.lastActiveAt = .now }
+            if thread === self.thread {
+                thread.lastActiveAt = .now
+                Extensions.windowChanged(self)
+            }
             self.store.scheduleSave(thread)
         }
         thread.restoreIfNeeded()

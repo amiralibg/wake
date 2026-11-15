@@ -21,6 +21,7 @@ struct BrowserCommands: Commands {
         CommandGroup(replacing: .appSettings) {
             Button("Settings…") { browser?.showSettings() }
                 .keyboardShortcut(",", modifiers: .command)
+            Button("Extensions…") { browser?.showSettings(.extensions) }
         }
 
         CommandGroup(after: .newItem) {
@@ -38,6 +39,8 @@ struct BrowserCommands: Commands {
                 .keyboardShortcut("d", modifiers: [.command, .shift])
             Divider()
             Button("Import from Another Browser…") { browser?.isImportingBrowserData = true }
+            Button("Add Extension…") { Extensions.chooseAndInstall() }
+                .disabled(!Extensions.isSupported)
             Divider()
             // ⌘W closes the column (or overlay); ⇧⌘W the window, as in Safari. The
             // action looks the browser up when it runs, so it never goes stale.

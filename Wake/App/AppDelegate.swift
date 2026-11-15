@@ -12,6 +12,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         MainActor.assumeIsolated {
             AppUpdater.shared.start()
             MemoryPressure.start()
+            Extensions.start()
         }
         #if BENCH
         MainActor.assumeIsolated { Benchmark.startIfRequested() }
@@ -19,6 +20,11 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         DispatchQueue.main.asyncAfter(deadline: .now() + 0.4) {
             MainActor.assumeIsolated { Self.openWindowIfNeeded() }
         }
+        #if DEBUG
+        DispatchQueue.main.asyncAfter(deadline: .now() + 2.5) {
+            MainActor.assumeIsolated { DebugLaunch.run() }
+        }
+        #endif
         // History's one-off upkeep (e.g. giving old visits a searchable address)
         // runs once the first window is up, rather than when History first opens.
         DispatchQueue.main.asyncAfter(deadline: .now() + 3) {

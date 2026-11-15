@@ -38,7 +38,8 @@ final class TrailModel {
     /// Opens `url` in a new column right after `source` (or after the focused column).
     @discardableResult
     func open(_ url: URL, after source: BrowserPage? = nil, focus: Bool = true) -> BrowserPage {
-        let page = makePage()
+        // An extension's own page (options, a tab it opens) needs that extension's configuration.
+        let page = makePage(configuration: Extensions.configuration(for: url))
         insert(page, after: source ?? focused, focus: focus)
         page.load(url)
         return page

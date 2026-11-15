@@ -14,6 +14,7 @@ extension WKWebViewConfiguration {
             WebInspector.enable(in: configuration.preferences)
         }
         WebScripts.install(in: configuration.userContentController)
+        Extensions.attach(to: configuration)
         return configuration
     }
 }

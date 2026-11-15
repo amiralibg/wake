@@ -1,0 +1,51 @@
+{
+  "manifest_version": 3,
+  "name": "Wake Test Extension",
+  "version": "1.0",
+  "description": "Checks content scripts, the toolbar popup, badges, tabs and storage in Wake.",
+  "action": {
+    "default_title": "Wake Test",
+    "default_popup": "popup.html",
+    "default_icon": {
+      "16": "icon16.png",
+      "32": "icon32.png"
+    }
+  },
+  "icons": {
+    "48": "icon48.png",
+    "128": "icon128.png"
+  },
+  "background": {
+    "service_worker": "background.js"
+  },
+  "content_scripts": [
+    {
+      "matches": [
+        "<all_urls>"
+      ],
+      "js": [
+        "content.js"
+      ]
+    }
+  ],
+  "permissions": [
+    "storage",
+    "tabs",
+    "contextMenus"
+  ],
+  "options_page": "options.html",
+  "commands": {
+    "_execute_action": {
+      "suggested_key": {
+        "default": "Alt+Shift+W"
+      },
+      "description": "Open the popup"
+    },
+    "count-columns": {
+      "suggested_key": {
+        "default": "Alt+Shift+K"
+      },
+      "description": "Count columns into the badge"
+    }
+  }
+}

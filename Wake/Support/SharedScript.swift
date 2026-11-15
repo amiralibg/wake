@@ -11,6 +11,7 @@ enum SharedScript: String, CaseIterable {
     case pageState = "page-state"
     case scrollSync = "scroll-sync"
     case live
+    case extensionStores = "extension-stores"
     case momentCapture = "moment-capture"
     case momentRestore = "moment-restore"
     case visibleText = "visible-text"

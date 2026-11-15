@@ -18,12 +18,17 @@ enum WebScripts {
         controller.add(PageScriptBridge(route: .devTools), contentWorld: .page, name: DevToolsScripts.handlerName)
     }
 
-    /// Link interception, the scroll probe, page state, scroll sync and live-chip
-    /// reporters, in Wake's world.
+    /// Link interception, the scroll probe, page state, scroll sync, live-chip
+    /// reporters and the extension stores' install button, in Wake's world.
     static var baseScript: WKUserScript {
         let scripts: [SharedScript] = [.linkInterceptor, .scrollProbe, .pageState, .scrollSync, .live]
+        var sources = scripts.map { $0.source(["channel": handlerName]) }
+        // "Add to Wake" on extension store pages; returns at once on every other site.
+        if Extensions.isSupported {
+            sources.append(SharedScript.extensionStores.source(["channel": handlerName, "state": Extensions.storeState]))
+        }
         return WKUserScript(
-            source: scripts.map { $0.source(["channel": handlerName]) }.joined(separator: "\n"),
+            source: sources.joined(separator: "\n"),
             injectionTime: .atDocumentStart,
             forMainFrameOnly: true,
             in: world
