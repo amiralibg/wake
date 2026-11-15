@@ -47,6 +47,8 @@ final class BrowserModel {
     var savedMoment: MomentRecord?
     /// An extension install waiting for an answer, or why it couldn't go ahead.
     var extensionPrompt: ExtensionInstallPrompt?
+    /// The toolbar's extensions menu is open (its button, or ⌘K ▸ Extensions).
+    var showsExtensionsMenu = false
     /// The "Import from Another Browser" sheet.
     var isImportingBrowserData = false
     /// After ⌃W, single keys move between columns (see `ColumnMode`).
@@ -280,7 +282,7 @@ final class BrowserModel {
         let target = palette.target
         hidePalette()
         if target == .currentColumn, let page {
-            page.load(url)
+            trail.navigate(page, to: url)
         } else {
             trail.open(url)
         }

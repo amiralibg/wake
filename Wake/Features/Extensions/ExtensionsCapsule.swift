@@ -16,10 +16,10 @@ struct ExtensionsCapsule: View {
 @available(macOS 15.4, *)
 private struct ExtensionsCapsuleContent: View {
     @Environment(BrowserModel.self) private var browser
-    @State private var isMenuOpen = false
     private let library = ExtensionLibrary.shared
 
     var body: some View {
+        @Bindable var browser = browser
         let pinned = library.enabled.filter { $0.record.isPinned }
         if !library.items.isEmpty {
             HStack(spacing: 0) {
@@ -27,15 +27,15 @@ private struct ExtensionsCapsuleContent: View {
                     ExtensionActionButton(item: item)
                         .transition(.scale(scale: 0.6).combined(with: .opacity))
                 }
-                Button { isMenuOpen.toggle() } label: {
+                Button { browser.showsExtensionsMenu.toggle() } label: {
                     ToolbarIcon(symbol: "puzzlepiece.extension")
                 }
                 .buttonStyle(.plain)
                 .help("Extensions")
                 .accessibilityLabel("Extensions")
                 .background(PopupAnchor(id: ExtensionLibrary.menuAnchorID))
-                .popover(isPresented: $isMenuOpen, arrowEdge: .bottom) {
-                    ExtensionsMenu(close: { isMenuOpen = false })
+                .popover(isPresented: $browser.showsExtensionsMenu, arrowEdge: .bottom) {
+                    ExtensionsMenu(close: { browser.showsExtensionsMenu = false })
                         .environment(browser)
                 }
             }
@@ -66,6 +66,16 @@ struct ExtensionActionButton: View {
                     if let badge = action?.badgeText, !badge.isEmpty {
                         ExtensionBadge(text: badge)
                             .offset(x: -1, y: 1)
+                    }
+                }
+                .overlay(alignment: .bottomTrailing) {
+                    // Limited to chosen sites and this page is one it would run on.
+                    if library.wantsAccess(item, to: browser.webPage?.url) {
+                        Circle()
+                            .fill(.tint)
+                            .frame(width: 6, height: 6)
+                            .overlay(Circle().stroke(.background.opacity(0.8), lineWidth: 1))
+                            .offset(x: -6, y: -5)
                     }
                 }
                 .contentShape(.rect)

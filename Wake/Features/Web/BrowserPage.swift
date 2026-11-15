@@ -150,6 +150,17 @@ final class BrowserPage: NSObject, Identifiable {
         }
     }
 
+    /// Shows `url` as the page's address without loading it: a column waiting for
+    /// its extension to load (see `TrailModel.awaitingExtension`).
+    func hold(_ url: URL) {
+        requestedURL = url
+    }
+
+    /// A page that can't load at all, e.g. one from an extension that was removed.
+    func showFailure(_ message: String) {
+        failure = message
+    }
+
     func reload() {
         // After a failed local load there's no document for WebKit to reload.
         if failure != nil, let requestedURL, requestedURL.isFileURL {

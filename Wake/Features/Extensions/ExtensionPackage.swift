@@ -23,6 +23,18 @@ struct ExtensionRecord: Codable, Identifiable, Equatable {
     /// install confirmation and granted again at each launch).
     var grantedPermissions: [String] = []
     var grantedMatchPatterns: [String] = []
+    /// Where it may read and change pages without a click (Chrome's "Site access").
+    var siteAccess: SiteAccess = .allSites
+    /// With `.chosenSites`: the hosts it runs on by itself. Elsewhere it waits for a
+    /// click on its button.
+    var allowedSites: [String] = []
+
+    enum SiteAccess: String, Codable {
+        /// Everything the manifest asks for, granted at install.
+        case allSites
+        /// Only `allowedSites`, and the page you click it on.
+        case chosenSites
+    }
 
     enum Source: Codable, Equatable {
         case file
@@ -74,6 +86,8 @@ struct ExtensionRecord: Codable, Identifiable, Equatable {
         grantedMatchPatterns = try c.decodeIfPresent([String].self, forKey: .grantedMatchPatterns) ?? []
         lastUpdateCheck = try c.decodeIfPresent(Date.self, forKey: .lastUpdateCheck)
         pendingUpdateVersion = try c.decodeIfPresent(String.self, forKey: .pendingUpdateVersion)
+        siteAccess = (try? c.decodeIfPresent(SiteAccess.self, forKey: .siteAccess)) ?? .allSites
+        allowedSites = try c.decodeIfPresent([String].self, forKey: .allowedSites) ?? []
     }
 }
 
@@ -133,7 +147,8 @@ enum ExtensionPackage {
         try stage(file, into: folder(for: id))
     }
 
-    /// Copies `file` into `folder` as `extension/` or `extension.zip`.
+    /// Copies or unpacks `file` into `folder` as `extension/`. Archives are unpacked
+    /// rather than handed to WebKit as ZIPs: see `ZipExtractor` for why.
     static func stage(_ file: URL, into folder: URL) throws -> String {
         let fm = FileManager.default
         try fm.createDirectory(at: folder, withIntermediateDirectories: true)
@@ -147,8 +162,36 @@ enum ExtensionPackage {
         }
         let data = try Data(contentsOf: file, options: .mappedIfSafe)
         guard let zip = zipPayload(of: data) else { throw Failure.notAnExtension }
-        try zip.write(to: folder.appendingPathComponent("extension.zip"), options: .atomic)
-        return "extension.zip"
+        return try unpack(zip, into: folder)
+    }
+
+    /// Unpacks a ZIP into `folder/extension`, replacing what was there.
+    private static func unpack(_ zip: Data, into folder: URL) throws -> String {
+        let fm = FileManager.default
+        let target = folder.appendingPathComponent("extension", isDirectory: true)
+        let scratch = folder.appendingPathComponent("unpacking-\(UUID().uuidString)", isDirectory: true)
+        defer { try? fm.removeItem(at: scratch) }
+        try ZipExtractor.extract(zip, to: scratch)
+        guard fm.fileExists(atPath: scratch.appendingPathComponent("manifest.json").path) else { throw Failure.notAnExtension }
+        try? fm.removeItem(at: target)
+        try fm.moveItem(at: scratch, to: target)
+        return "extension"
+    }
+
+    /// Packages installed by earlier versions of Wake were kept as `extension.zip`.
+    /// Unpacks one in place and returns the new package name, or nil if it stays.
+    static func unpackLegacyArchive(of record: ExtensionRecord) -> String? {
+        guard record.packageName == "extension.zip" else { return nil }
+        let folder = folder(for: record.id)
+        let archive = folder.appendingPathComponent("extension.zip")
+        do {
+            let name = try unpack(try Data(contentsOf: archive, options: .mappedIfSafe), into: folder)
+            try? FileManager.default.removeItem(at: archive)
+            return name
+        } catch {
+            NSLog("Wake: couldn't unpack \(record.id): \(error.localizedDescription)")
+            return nil
+        }
     }
 
     /// The ZIP inside a `.zip`, `.xpi` or `.crx` (CRX2 and CRX3), or nil.

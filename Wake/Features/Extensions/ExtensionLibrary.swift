@@ -63,6 +63,8 @@ final class ExtensionLibrary: NSObject {
     /// Something is being downloaded or read for an install.
     var isPreparingInstall: Bool { installing != nil }
     @ObservationIgnored private var started = false
+    /// The extensions installed at launch have all been loaded (or failed to).
+    @ObservationIgnored private(set) var hasLoaded = false
     /// Toolbar buttons register here so a popup can open under its own button.
     @ObservationIgnored private var anchors: [String: [WeakView]] = [:]
     struct WeakView { weak var view: NSView? }
@@ -82,7 +84,15 @@ final class ExtensionLibrary: NSObject {
     func start() {
         guard !started else { return }
         started = true
-        let records = Self.readRecords()
+        var records = Self.readRecords()
+        // Earlier builds kept packages as ZIPs, which break after a relaunch.
+        var migrated = false
+        for index in records.indices {
+            if let name = ExtensionPackage.unpackLegacyArchive(of: records[index]) {
+                records[index].packageName = name
+                migrated = true
+            }
+        }
         Task {
             for record in records {
                 let url = ExtensionPackage.packageURL(for: record)
@@ -95,9 +105,12 @@ final class ExtensionLibrary: NSObject {
                     NSLog("Wake: extension \(record.id) didn't load: \(error.localizedDescription)")
                 }
             }
+            hasLoaded = true
+            if migrated { save() }
             // Report the windows that opened before the extensions finished loading.
             tabs.resyncAll()
             refreshStorePages()
+            NotificationCenter.default.post(name: Extensions.didChange, object: nil)
         }
         monitorShortcuts()
         scheduleUpdates()
@@ -106,7 +119,10 @@ final class ExtensionLibrary: NSObject {
     private func load(_ item: InstalledExtension) {
         let context = WKWebExtensionContext(for: item.webExtension)
         context.uniqueIdentifier = item.id
-        if let base = URL(string: "\(Self.scheme)://\(item.id.lowercased())/") { context.baseURL = base }
+        if let base = URL(string: "\(Self.scheme)://\(item.id.lowercased())/") {
+            context.baseURL = base
+            ExtensionTrackingExemption.exempt(base, in: controller.configuration.defaultWebsiteDataStore ?? .default())
+        }
         context.isInspectable = true
         context.inspectionName = item.name
         grantPermissions(of: item, in: context)
@@ -114,30 +130,159 @@ final class ExtensionLibrary: NSObject {
             try controller.load(context)
             item.context = context
             item.loadError = nil
+            if hasLoaded { NotificationCenter.default.post(name: Extensions.didChange, object: nil) }
         } catch {
             item.loadError = error.localizedDescription
         }
     }
 
     /// The install confirmation granted what the manifest asks for; optional
-    /// permissions granted later are kept in the record.
+    /// permissions granted later are kept in the record. Host access follows the
+    /// person's site-access choice.
     private func grantPermissions(of item: InstalledExtension, in context: WKWebExtensionContext) {
-        let webExtension = item.webExtension
-        for permission in webExtension.requestedPermissions {
+        for permission in item.webExtension.requestedPermissions {
             context.setPermissionStatus(.grantedExplicitly, for: permission)
-        }
-        let optionalPatterns = webExtension.optionalPermissionMatchPatterns
-        for pattern in webExtension.requestedPermissionMatchPatterns.union(webExtension.allRequestedMatchPatterns.subtracting(optionalPatterns)) {
-            context.setPermissionStatus(.grantedExplicitly, for: pattern)
         }
         for name in item.record.grantedPermissions {
             context.setPermissionStatus(.grantedExplicitly, for: WKWebExtension.Permission(rawValue: name))
         }
-        for string in item.record.grantedMatchPatterns {
-            if let pattern = try? WKWebExtension.MatchPattern(string: string) {
+        applySiteAccess(of: item, to: context)
+    }
+
+    // MARK: Site access
+
+    /// For one site: does the extension run there by itself, only when clicked, or
+    /// everywhere? Chrome's "This can read and change site data".
+    enum SiteChoice: CaseIterable {
+        case onClick, thisSite, allSites
+    }
+
+    /// Host patterns the manifest asks for up front (`host_permissions`, content
+    /// scripts), as opposed to optional ones it asks for at run time.
+    private static func requiredPatterns(_ webExtension: WKWebExtension) -> Set<WKWebExtension.MatchPattern> {
+        webExtension.requestedPermissionMatchPatterns.union(webExtension.allRequestedMatchPatterns.subtracting(webExtension.optionalPermissionMatchPatterns))
+    }
+
+    /// The extension asks to read and change websites, so site access applies to it.
+    func wantsSiteAccess(_ item: InstalledExtension) -> Bool {
+        Self.requiredPatterns(item.webExtension).contains { $0.matchesAllURLs || $0.matchesAllHosts || $0.host?.isEmpty == false }
+    }
+
+    func siteChoice(of item: InstalledExtension, on host: String) -> SiteChoice {
+        switch item.record.siteAccess {
+        case .allSites: .allSites
+        case .chosenSites: item.record.allowedSites.contains(host) ? .thisSite : .onClick
+        }
+    }
+
+    /// Hosts granted by a click on the button (Chrome's "on click"), kept until Wake
+    /// quits or the extension's site access changes.
+    ///
+    /// Limitation: Chrome drops a click grant when that tab leaves the site; Wake keeps
+    /// it for the host in every column until relaunch, because WebKit's grants are per
+    /// extension, not per tab.
+    @ObservationIgnored private var clickGrants: [String: Set<String>] = [:]
+    /// The page whose extensions changed access: it needs a reload to apply.
+    private(set) var pageNeedingReload: BrowserPage.ID?
+
+    func setSiteChoice(_ choice: SiteChoice, for item: InstalledExtension, on host: String, page: BrowserPage?) {
+        guard siteChoice(of: item, on: host) != choice else { return }
+        switch choice {
+        case .allSites:
+            item.record.siteAccess = .allSites
+        case .thisSite:
+            if item.record.siteAccess == .allSites { item.record.allowedSites = [] }
+            item.record.siteAccess = .chosenSites
+            item.record.allowedSites = Array(Set(item.record.allowedSites + [host])).sorted()
+        case .onClick:
+            if item.record.siteAccess == .allSites { item.record.allowedSites = [] }
+            item.record.siteAccess = .chosenSites
+            item.record.allowedSites.removeAll { $0 == host }
+            // An earlier "Allow on this site?" for the same host gives way to this choice.
+            if let url = URL(string: "https://\(host)/") {
+                item.record.grantedMatchPatterns.removeAll { (try? WKWebExtension.MatchPattern(string: $0))?.matches(url) == true }
+            }
+        }
+        clickGrants[item.id] = nil
+        if let context = item.context { applySiteAccess(of: item, to: context) }
+        item.actionVersion += 1
+        pageNeedingReload = page?.id
+        save()
+    }
+
+    func reloadAfterAccessChange(_ page: BrowserPage) {
+        pageNeedingReload = nil
+        page.reload()
+    }
+
+    /// The extension would run on this page but isn't allowed to: its button shows a
+    /// dot, and clicking it grants the site.
+    func wantsAccess(_ item: InstalledExtension, to url: URL?) -> Bool {
+        guard let url, let context = item.context, item.record.siteAccess == .chosenSites,
+              ["http", "https"].contains(url.scheme ?? "") else { return false }
+        switch context.permissionStatus(for: url) {
+        case .requestedImplicitly, .requestedExplicitly: return true
+        // Denied by Wake when a site was taken away (see `applySiteAccess`), but the
+        // manifest still asks for it.
+        case .deniedExplicitly, .deniedImplicitly: return Self.requiredPatterns(item.webExtension).contains { $0.matchesAllURLs || $0.matches(url) }
+        default: return false
+        }
+    }
+
+    private func applySiteAccess(of item: InstalledExtension, to context: WKWebExtensionContext) {
+        let required = Self.requiredPatterns(item.webExtension)
+        let optional = item.record.grantedMatchPatterns.compactMap { try? WKWebExtension.MatchPattern(string: $0) }
+        switch item.record.siteAccess {
+        case .allSites:
+            // Sites denied while access was limited are allowed again.
+            for pattern in Array(context.deniedPermissionMatchPatterns.keys) {
+                context.setPermissionStatus(.unknown, for: pattern)
+            }
+            for pattern in required.union(optional) {
+                context.setPermissionStatus(.grantedExplicitly, for: pattern)
+            }
+        case .chosenSites:
+            // Only the chosen sites, click grants and site-specific optional grants stay.
+            //
+            // Limitation: WebKit keeps running content scripts it set up under a broad
+            // grant (`<all_urls>`) when that grant is merely forgotten (`.unknown`); only
+            // an explicit denial takes them out of pages. WebKit also remembers grants
+            // across launches. So everything else is denied explicitly, then the kept
+            // sites are granted, and an explicit grant for a site wins over the broad
+            // denial. A side effect: `permissions.request` for a new site is refused
+            // while access is limited; the extension's button grants it instead.
+            let hosts = item.record.allowedSites + (clickGrants[item.id] ?? [])
+            let kept = hosts.compactMap(Self.pattern(for:)) + optional.filter(Self.isSitePattern)
+            let keep = Set(kept.map(\.string))
+            for pattern in Array(context.grantedPermissionMatchPatterns.keys) + Array(required.union(optional)) where !keep.contains(pattern.string) {
+                context.setPermissionStatus(.deniedExplicitly, for: pattern)
+            }
+            for pattern in kept {
                 context.setPermissionStatus(.grantedExplicitly, for: pattern)
             }
         }
+    }
+
+    /// `*://host/*`: one site, the way site access grants it.
+    private static func pattern(for host: String) -> WKWebExtension.MatchPattern? {
+        try? WKWebExtension.MatchPattern(string: "*://\(host)/*")
+    }
+
+    /// A pattern for a single named host, kept when access is narrowed to chosen sites.
+    private static func isSitePattern(_ pattern: WKWebExtension.MatchPattern) -> Bool {
+        guard !pattern.matchesAllURLs, !pattern.matchesAllHosts, let host = pattern.host, !host.isEmpty else { return false }
+        return !host.hasPrefix("*")
+    }
+
+    /// A click on the button of an extension limited to chosen sites grants it the
+    /// page's site, like Chrome's "When you click the extension".
+    private func grantOnClick(_ item: InstalledExtension, tab: ExtensionTab?) {
+        guard let page = tab?.page, let url = page.url, wantsAccess(item, to: url), let host = url.host(),
+              let context = item.context, let pattern = Self.pattern(for: host) else { return }
+        clickGrants[item.id, default: []].insert(host)
+        context.setPermissionStatus(.grantedExplicitly, for: pattern)
+        item.actionVersion += 1
+        pageNeedingReload = page.id
     }
 
     // MARK: Installing
@@ -208,7 +353,7 @@ final class ExtensionLibrary: NSObject {
         // `-WakeDebugConfirm YES`: say yes without the sheet (see DebugLaunch).
         if UserDefaults.standard.bool(forKey: "WakeDebugConfirm") {
             if case .request(let request) = prompt { confirmInstall(request.id) }
-            NSLog("Wake debug: install prompt \(prompt.id)")
+            DebugLaunch.note("install prompt \(prompt.id)")
             return
         }
         #endif
@@ -553,7 +698,9 @@ final class ExtensionLibrary: NSObject {
     /// A toolbar button was clicked: the extension's popup opens, or its click handler runs.
     func performAction(_ item: InstalledExtension, in browser: BrowserModel) {
         guard let context = item.context else { return }
-        context.performAction(for: tabs.activeTab(in: browser))
+        let tab = tabs.activeTab(in: browser)
+        grantOnClick(item, tab: tab)
+        context.performAction(for: tab)
     }
 
     func register(anchor view: NSView, for id: String) {

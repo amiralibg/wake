@@ -33,6 +33,29 @@ enum Extensions {
         return ExtensionLibrary.shared.controller.extensionContext(for: url)?.webViewConfiguration
     }
 
+    static func isExtensionURL(_ url: URL) -> Bool {
+        url.scheme == "webkit-extension"
+    }
+
+    /// Posted when extensions finish loading at launch, and when one is added or turned
+    /// on, so columns waiting for an extension's page can load it.
+    static let didChange = Notification.Name("WakeExtensionsDidChange")
+
+    /// True until the installed extensions have loaded after launch.
+    static var isStarting: Bool {
+        guard #available(macOS 15.4, *) else { return false }
+        return !ExtensionLibrary.shared.hasLoaded
+    }
+
+    /// Why a column can't show an extension page.
+    static func missingMessage(for url: URL) -> String {
+        guard #available(macOS 15.4, *) else { return "Extensions need macOS 15.4 or later." }
+        if let item = ExtensionLibrary.shared.items.first(where: { $0.id.lowercased() == url.host()?.lowercased() }) {
+            return item.record.isEnabled ? "“\(item.name)” didn't load." : "“\(item.name)” is turned off. Turn it on in Settings ▸ Extensions."
+        }
+        return "The extension that made this page isn't installed any more."
+    }
+
     /// The window's columns changed (opened, closed, moved, focused, thread switched).
     static func windowChanged(_ browser: BrowserModel) {
         guard #available(macOS 15.4, *) else { return }

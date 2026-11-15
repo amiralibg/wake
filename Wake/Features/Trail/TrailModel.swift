@@ -39,10 +39,80 @@ final class TrailModel {
     @discardableResult
     func open(_ url: URL, after source: BrowserPage? = nil, focus: Bool = true) -> BrowserPage {
         // An extension's own page (options, a tab it opens) needs that extension's configuration.
-        let page = makePage(configuration: Extensions.configuration(for: url))
+        let page = makePage(for: url)
         insert(page, after: source ?? focused, focus: focus)
-        page.load(url)
+        start(page, url)
         return page
+    }
+
+    /// Loads `url` in `page`'s column. Going to or from an extension's own page needs a
+    /// different configuration, which a web view can't change, so the column gets a
+    /// new page (WebKit: apps "must also swap web views in tabs when navigating to and
+    /// from web extension URLs").
+    func navigate(_ page: BrowserPage, to url: URL) {
+        let fromExtension = page.url.map(Extensions.isExtensionURL) ?? false
+        guard Extensions.isExtensionURL(url) || fromExtension, columns.contains(where: { $0 === page }) else {
+            page.load(url)
+            return
+        }
+        let replacement = makePage(for: url)
+        swap(page, for: replacement)
+        start(replacement, url)
+    }
+
+    /// Loads the page, unless it's waiting for its extension to load.
+    private func start(_ page: BrowserPage, _ url: URL) {
+        if awaitingExtension[page.id] != nil { page.hold(url) } else { page.load(url) }
+    }
+
+    // MARK: Extension pages
+
+    /// Columns showing an extension's page whose extension hadn't loaded yet when they
+    /// were made (restored at launch: threads load before extensions do). Each waits
+    /// with its address shown and is swapped for a real page once `Extensions` says
+    /// the extension is ready.
+    @ObservationIgnored private var awaitingExtension: [BrowserPage.ID: URL] = [:]
+    @ObservationIgnored private var extensionObserver: NSObjectProtocol?
+
+    private func makePage(for url: URL) -> BrowserPage {
+        guard Extensions.isExtensionURL(url) else { return makePage() }
+        if let configuration = Extensions.configuration(for: url) { return makePage(configuration: configuration) }
+        let page = makePage()
+        awaitingExtension[page.id] = url
+        if !Extensions.isStarting { page.showFailure(Extensions.missingMessage(for: url)) }
+        extensionObserver = extensionObserver ?? NotificationCenter.default.addObserver(forName: Extensions.didChange, object: nil, queue: .main) { [weak self] _ in
+            MainActor.assumeIsolated { self?.resumeExtensionPages() }
+        }
+        return page
+    }
+
+    private func resumeExtensionPages() {
+        for (id, url) in awaitingExtension {
+            guard let page = columns.first(where: { $0.id == id }) else {
+                awaitingExtension[id] = nil
+                continue
+            }
+            guard let configuration = Extensions.configuration(for: url) else {
+                if !Extensions.isStarting { page.showFailure(Extensions.missingMessage(for: url)) }
+                continue
+            }
+            awaitingExtension[id] = nil
+            let replacement = makePage(configuration: configuration)
+            replacement.isRestoring = page.isRestoring
+            replacement.pendingScrollY = page.pendingScrollY
+            swap(page, for: replacement)
+            replacement.load(url)
+        }
+    }
+
+    /// Puts `replacement` where `page` was, keeping its width and focus.
+    private func swap(_ page: BrowserPage, for replacement: BrowserPage) {
+        guard let index = columns.firstIndex(where: { $0 === page }) else { return }
+        if let width = customWidths.removeValue(forKey: page.id) { customWidths[replacement.id] = width }
+        columns[index] = replacement
+        if index == focusedIndex { makeFirstResponder(replacement) }
+        onChange()
+        release([page])
     }
 
     /// Popups (`target=_blank`, `window.open`) must use WebKit's configuration so
@@ -90,11 +160,11 @@ final class TrailModel {
     /// Recreates columns from a saved thread and starts loading them.
     func restore(_ snapshots: [BrowserThread.ColumnSnapshot], focusedIndex: Int) {
         let pages = snapshots.map { snapshot -> BrowserPage in
-            let page = makePage()
+            let page = makePage(for: snapshot.url)
             if snapshots.count > 1, let fraction = snapshot.widthFraction { customWidths[page.id] = fraction }
             page.isRestoring = true
             page.pendingScrollY = snapshot.scrollY
-            page.load(snapshot.url)
+            start(page, snapshot.url)
             return page
         }
         columns = pages
@@ -126,7 +196,7 @@ final class TrailModel {
     /// Reopens the last closed column where it was.
     func reopenClosed() {
         guard let closed = recentlyClosed.popLast() else { return }
-        let page = makePage()
+        let page = makePage(for: closed.url)
         let index = min(closed.index, columns.count)
         if columns.count >= 1, let fraction = closed.widthFraction { customWidths[page.id] = fraction }
         withAnimation(.trail) {
@@ -134,7 +204,7 @@ final class TrailModel {
             focusedIndex = index
             restingOffset = nil
         }
-        page.load(closed.url)
+        start(page, closed.url)
         makeFirstResponder(page)
         onChange()
     }
@@ -188,8 +258,8 @@ final class TrailModel {
     private func makePage(configuration: WKWebViewConfiguration? = nil) -> BrowserPage {
         let page = configuration.map(BrowserPage.init(configuration:)) ?? BrowserPage()
         page.onOpenLink = { [weak self, weak page] url, background in
-            if !background, !BrowsingSettings.shared.linksOpenInNewColumn {
-                page?.load(url)
+            if !background, !BrowsingSettings.shared.linksOpenInNewColumn, let page {
+                self?.navigate(page, to: url)
             } else {
                 self?.open(url, after: page, focus: !background)
             }

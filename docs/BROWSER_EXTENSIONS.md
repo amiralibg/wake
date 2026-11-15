@@ -8,6 +8,16 @@ Sources are primary: Apple, Microsoft, MDN, Chrome and Electron documentation, t
 
 macOS is built (`Wake/Features/Extensions`, macOS 15.4+): `WKWebExtension` runtime with tabs and windows, toolbar buttons with badges and popups, permission prompts, install from the Chrome Web Store, Edge Add-ons and Firefox Add-ons (an "Add to Wake" button in the store's own page, `shared/scripts/extension-stores.js`), import from Chrome, Arc, Dia, Brave, Edge, Vivaldi, Opera, Helium, Firefox, Zen and Waterfox profiles, `.crx` / `.xpi` / `.zip` / folder installs, automatic updates from the stores (SHA-256 checked; updates that ask for more access wait for a yes), keyboard `commands`, and context-menu items. Test fixture: `Scripts/extension-test`. Windows and Linux are as described below.
 
+Also built: per-site access ("When you click it" / "On this site" / "On all sites", in the extensions menu), and columns showing an extension's own page are restored after relaunch (they wait for the extension to load).
+
+WebKit behaviour found in testing (macOS 27), each called out in the code:
+
+- **ITP clears extension origins.** Intelligent Tracking Prevention treats `webkit-extension://<id>` like a website; an origin it never saw "user interaction" with has its website data removed repeatedly, which unregisters the extension's background service worker. Popups then get `undefined` from `runtime.sendMessage` (Dark Reader stuck on "Loading, please wait"). Wake logs a user interaction for each extension origin through the SPI `_logUserInteraction:completionHandler:` (`ExtensionTrackingExemption`). No public API exists.
+- **Packages are unpacked by Wake** (`ZipExtractor`), not handed to WebKit as ZIPs, which WebKit re-extracts to a new temporary folder at every launch.
+- **Revoking host access.** Setting a broad grant (`<all_urls>`) back to `.unknown` leaves its content scripts running; only an explicit denial removes them, and WebKit remembers grants across launches. Limited site access therefore denies broadly and grants chosen sites explicitly.
+- **No badge colour** (`action.setBadgeBackgroundColor`): `WKWebExtension.Action` has no colour, public or SPI (checked with the Objective-C runtime).
+- **Extensions that don't run:** uBlock Origin's Firefox build calls `browser.runtime.getURL` detached from its object (`vAPI.getURL = browser.runtime.getURL`), which returns `undefined` in WebKit; uBlock Origin Lite is the build to use. Tampermonkey adds `tabs.onUpdated` after startup, which WebKit refuses for non-persistent backgrounds.
+
 ## Verdict
 
 | Platform | Engine | Verdict | Rough effort |
