@@ -34,9 +34,40 @@ struct PageCard: View {
             .background {
                 RoundedRectangle(cornerRadius: radius, style: .continuous)
                     .fill(Color(nsColor: .textBackgroundColor))
-                    .shadow(color: .black.opacity(isFocused ? 0.24 : 0.08), radius: isFocused ? 26 : 8, y: isFocused ? 18 : 4)
+                    .shadow(color: .black.opacity(shadowOpacity), radius: shadowRadius, y: shadowRadius * 0.65)
             }
-            .overlay(RoundedRectangle(cornerRadius: radius, style: .continuous).stroke(.black.opacity(0.12), lineWidth: 0.5))
+            .overlay { edge(radius: radius) }
+    }
+
+    private var shadowOpacity: Double {
+        switch appearance.cardStyle {
+        case .floating: isFocused ? 0.24 : 0.08
+        case .outlined: 0.06
+        case .flat: 0
+        }
+    }
+
+    private var shadowRadius: CGFloat {
+        switch appearance.cardStyle {
+        case .floating: isFocused ? 26 : 8
+        case .outlined: 4
+        case .flat: 0
+        }
+    }
+
+    /// Outlined and flat cards show focus with the accent colour instead of a shadow.
+    @ViewBuilder private func edge(radius: CGFloat) -> some View {
+        let shape = RoundedRectangle(cornerRadius: radius, style: .continuous)
+        switch appearance.cardStyle {
+        case .floating:
+            shape.stroke(.black.opacity(0.12), lineWidth: 0.5)
+        case .outlined:
+            shape.stroke(isFocused ? AnyShapeStyle(.tint) : AnyShapeStyle(.primary.opacity(0.18)), lineWidth: isFocused ? 1.5 : 0.75)
+        case .flat:
+            if isFocused {
+                shape.stroke(.tint.opacity(0.85), lineWidth: 2)
+            }
+        }
     }
 }
 

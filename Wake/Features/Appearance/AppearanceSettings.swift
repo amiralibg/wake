@@ -12,6 +12,9 @@ final class AppearanceSettings {
     var gap: CGFloat { didSet { store(Double(gap), .gap) } }
     var cornerRadius: CGFloat { didSet { store(Double(cornerRadius), .cornerRadius) } }
     var pageWidth: PageWidth { didSet { store(pageWidth.rawValue, .pageWidth) } }
+    var backdrop: BackdropStyle { didSet { store(backdrop.rawValue, .backdrop) } }
+    var cardStyle: CardStyle { didSet { store(cardStyle.rawValue, .cardStyle) } }
+    var motion: MotionStyle { didSet { store(motion.rawValue, .motion); MotionStyle.current = motion } }
 
     @ObservationIgnored private let defaults: UserDefaults
 
@@ -23,6 +26,10 @@ final class AppearanceSettings {
         gap = CGFloat(defaults.object(forKey: Key.gap.qualified) as? Double ?? Double(GapPreset.balanced.rawValue))
         cornerRadius = CGFloat(defaults.object(forKey: Key.cornerRadius.qualified) as? Double ?? 12)
         pageWidth = PageWidth(rawValue: defaults.string(forKey: Key.pageWidth.qualified) ?? "") ?? .balanced
+        backdrop = BackdropStyle(rawValue: defaults.string(forKey: Key.backdrop.qualified) ?? "") ?? .glass
+        cardStyle = CardStyle(rawValue: defaults.string(forKey: Key.cardStyle.qualified) ?? "") ?? .floating
+        motion = MotionStyle(rawValue: defaults.string(forKey: Key.motion.qualified) ?? "") ?? .standard
+        MotionStyle.current = motion
     }
 
     /// NSVisualEffectView follows the app appearance, not SwiftUI's preferredColorScheme,
@@ -32,7 +39,7 @@ final class AppearanceSettings {
     }
 
     private enum Key: String {
-        case theme, accent, glass, gap, cornerRadius, pageWidth
+        case theme, accent, glass, gap, cornerRadius, pageWidth, backdrop, cardStyle, motion
         var qualified: String { "appearance." + rawValue }
     }
 

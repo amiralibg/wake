@@ -127,3 +127,48 @@ enum CornerRadiusOption: CGFloat, CaseIterable, Identifiable {
         }
     }
 }
+
+/// What fills the window behind and between the pages.
+enum BackdropStyle: String, CaseIterable, Identifiable {
+    /// The desktop, blurred (the Glass setting picks how much).
+    case glass
+    /// Glass tinted with the accent colour.
+    case tinted
+    /// Glass under a soft wash of the accent colour.
+    case gradient
+    /// No blur at all: an opaque window background. Cheapest for the GPU, since
+    /// macOS doesn't re-blur the desktop behind the window.
+    case solid
+
+    var id: Self { self }
+
+    var label: String {
+        switch self {
+        case .glass: "Glass"
+        case .tinted: "Tinted"
+        case .gradient: "Gradient"
+        case .solid: "Solid"
+        }
+    }
+}
+
+/// How page cards sit on the backdrop and show focus.
+enum CardStyle: String, CaseIterable, Identifiable {
+    /// A soft shadow; the focused page's is deeper.
+    case floating
+    /// A hairline edge; the focused page gets an accent outline.
+    case outlined
+    /// No shadow or edge; the focused page gets an accent ring. Quietest, and
+    /// suits a small gap.
+    case flat
+
+    var id: Self { self }
+
+    var label: String {
+        switch self {
+        case .floating: "Floating"
+        case .outlined: "Outlined"
+        case .flat: "Flat"
+        }
+    }
+}

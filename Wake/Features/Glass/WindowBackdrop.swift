@@ -8,11 +8,28 @@ struct WindowBackdrop: View {
 
     var body: some View {
         ZStack {
-            BehindWindowBlur(material: appearance.glass.windowMaterial)
-            Color(nsColor: .windowBackgroundColor).opacity(appearance.glass.windowTint)
+            if appearance.backdrop == .solid {
+                Color(nsColor: .windowBackgroundColor)
+            } else {
+                BehindWindowBlur(material: appearance.glass.windowMaterial)
+                Color(nsColor: .windowBackgroundColor).opacity(appearance.glass.windowTint)
+                switch appearance.backdrop {
+                case .tinted:
+                    appearance.accent.color.opacity(0.16)
+                case .gradient:
+                    LinearGradient(
+                        colors: [appearance.accent.color.opacity(0.28), appearance.accent.color.opacity(0.04), .clear],
+                        startPoint: .topLeading, endPoint: .bottomTrailing
+                    )
+                case .glass, .solid:
+                    EmptyView()
+                }
+            }
         }
         .ignoresSafeArea()
         .animation(.smooth, value: appearance.glass)
+        .animation(.smooth, value: appearance.backdrop)
+        .animation(.smooth, value: appearance.accent)
     }
 }
 

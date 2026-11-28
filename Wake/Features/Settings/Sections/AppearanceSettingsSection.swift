@@ -31,6 +31,15 @@ struct AppearanceSettingsSection: View {
                 SettingsDivider()
                 SettingsRow("glass") {
                     SettingsSegmented(selection: $appearance.glass, options: GlassStrength.allCases, value: { $0 }, label: \.label)
+                        .disabled(appearance.backdrop == .solid)
+                }
+                SettingsDivider()
+                SettingsRow("backdrop", detail: appearance.backdrop == .solid ? "No blur behind the window: lightest on the GPU and battery." : nil) {
+                    SettingsSegmented(selection: $appearance.backdrop, options: BackdropStyle.allCases, value: { $0 }, label: \.label)
+                }
+                SettingsDivider()
+                SettingsRow("motion") {
+                    SettingsSegmented(selection: $appearance.motion, options: MotionStyle.allCases, value: { $0 }, label: \.label)
                 }
             }
 
@@ -46,6 +55,10 @@ struct AppearanceSettingsSection: View {
                             gapSlider
                         }
                     }
+                }
+                SettingsDivider()
+                SettingsRow("cardStyle") {
+                    SettingsSegmented(selection: $appearance.cardStyle, options: CardStyle.allCases, value: { $0 }, label: \.label)
                 }
                 SettingsDivider()
                 SettingsRow("cornerRadius") {
