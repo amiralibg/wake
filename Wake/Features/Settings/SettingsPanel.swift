@@ -61,6 +61,7 @@ struct SettingsPanel: View {
         case .search: SearchSettingsSection()
         case .appearance: AppearanceSettingsSection()
         case .deck: DeckSettingsSection()
+        case .passwords: PasswordsSettingsSection()
         case .extensions: ExtensionsSettingsSection()
         case .developer: DeveloperSettingsSection()
         case .privacy: PrivacySettingsSection()

@@ -16,6 +16,7 @@ enum SharedScript: String, CaseIterable {
     case momentRestore = "moment-restore"
     case visibleText = "visible-text"
     case findCount = "find-count"
+    case passwords
     case favicon
     case popOutPicker = "popout-picker"
     case popOutIsolate = "popout-isolate"

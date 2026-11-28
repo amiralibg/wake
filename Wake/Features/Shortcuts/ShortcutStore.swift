@@ -59,6 +59,21 @@ final class ShortcutStore {
         save()
     }
 
+    /// Starts from a preset's keys. Changes made before are replaced.
+    func apply(_ preset: ShortcutPreset) {
+        overrides = [:]
+        for (command, combo) in preset.overrides { overrides[command] = .some(combo) }
+        save()
+    }
+
+    /// The preset whose keys these are, if they're exactly one.
+    var matchingPreset: ShortcutPreset? {
+        ShortcutPreset.allCases.first { preset in
+            preset.overrides.count == overrides.count
+                && preset.overrides.allSatisfy { overrides[$0.key] == .some($0.value) }
+        }
+    }
+
     /// The command a combo runs, if any.
     func command(for combo: KeyCombo) -> WakeCommand? {
         WakeCommand.allCases.first { self.combo(for: $0) == combo }
@@ -165,5 +180,44 @@ extension ShortcutStore {
             return .extensionCommand(name)
         }
         return nil
+    }
+}
+
+/// Starting points for people coming from another browser.
+enum ShortcutPreset: String, CaseIterable, Identifiable {
+    /// Wake's own keys.
+    case wake
+    /// Safari, Chrome, Arc and Firefox agree on these: ⌘[ ⌘] for back and forward,
+    /// ⇧⌘[ ⇧⌘] and ⌃⇥ for tabs, ⌥⌘I for developer tools.
+    case browsers
+
+    var id: Self { self }
+
+    var title: String {
+        switch self {
+        case .wake: "Wake"
+        case .browsers: "Safari, Chrome and Arc"
+        }
+    }
+
+    var detail: String {
+        switch self {
+        case .wake: "⌘[ ⌘] move between columns; ⌥⌘[ ⌥⌘] go back and forward in a page."
+        case .browsers: "⌘[ ⌘] go back and forward; ⇧⌘[ ⇧⌘] move between columns, like tabs."
+        }
+    }
+
+    /// Keys that differ from Wake's defaults. ⇧ with a bracket is stored as the
+    /// shifted character ("{"), the way AppKit matches it.
+    var overrides: [WakeCommand: KeyCombo] {
+        switch self {
+        case .wake: [:]
+        case .browsers: [
+            .back: KeyCombo("[", .command),
+            .forward: KeyCombo("]", .command),
+            .previousColumn: KeyCombo("{", .command),
+            .nextColumn: KeyCombo("}", .command),
+        ]
+        }
     }
 }

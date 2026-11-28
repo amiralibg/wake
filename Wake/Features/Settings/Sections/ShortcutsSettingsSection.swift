@@ -114,6 +114,21 @@ struct ShortcutsSettingsSection: View {
                 Label(recorder.target == .search ? "Cancel" : "Find by Keys", systemImage: "keyboard")
             }
             .help("Press a shortcut to see what it does")
+
+            Menu {
+                ForEach(ShortcutPreset.allCases) { preset in
+                    Button {
+                        withAnimation(.snappy) { store.apply(preset) }
+                    } label: {
+                        Text(preset.title)
+                        Text(preset.detail)
+                    }
+                }
+            } label: {
+                Text("Keys: \(store.matchingPreset?.title ?? "Custom")")
+            }
+            .fixedSize()
+            .help("Start from another browser's keys. Your changes are replaced.")
         }
     }
 

@@ -87,6 +87,12 @@ final class BrowserModel {
         return all.compactMap(\.value)
     }
 
+    /// The browser that drives `window`.
+    static func model(for window: NSWindow?) -> BrowserModel? {
+        guard let window else { return nil }
+        return all.compactMap(\.value).first { $0.window === window }
+    }
+
     /// The browser in the key window (or main window, while a sheet or panel is key).
     static var active: BrowserModel? {
         all.removeAll { $0.value == nil }
@@ -434,13 +440,22 @@ final class BrowserModel {
         } else if apps.active != nil {
             withAnimation(.chrome) { apps.dismiss() }
             refocusPage()
+        } else if hasPasswordPrompt {
+            PasswordAutofill.shared.dismissPending()
         } else if find.isOpen {
             hideFind()
         }
     }
 
+    /// "Save password?" is showing in this window.
+    private var hasPasswordPrompt: Bool {
+        guard let window else { return false }
+        return PasswordAutofill.shared.pendingSave?.window === window
+    }
+
     var hasOverlay: Bool {
         isSettingsOpen || isPaletteOpen || isDeckOpen || apps.active != nil || isMomentsOpen || savedMoment != nil || find.isOpen
+            || hasPasswordPrompt
             || webPage?.isPickingPopOut == true
     }
 

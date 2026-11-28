@@ -66,6 +66,7 @@ let page = """
 <a id="link" href="/other?x=1">Other</a>
 <a id="hash" href="#top">Top</a>
 <form><input id="field"></form>
+<form id="login" onsubmit="return false"><input id="user" name="username"><input id="pass" type="password"><button id="go">Sign in</button></form>
 <section id="card" style="width:300px;height:200px;background:#eee"><h2>Card title</h2><p>Some words to find again later in this card.</p></section>
 <p id="para">The quick brown fox jumps over the lazy dog. The quick brown fox again.</p>
 <div style="height:3000px"></div>
@@ -78,7 +79,7 @@ func run() {
     let configuration = WKWebViewConfiguration()
     configuration.websiteDataStore = .nonPersistent()
     let controller = configuration.userContentController
-    let base: [SharedScript] = [.linkInterceptor, .scrollProbe, .pageState, .scrollSync, .live]
+    let base: [SharedScript] = [.linkInterceptor, .scrollProbe, .pageState, .scrollSync, .live, .passwords]
     controller.addUserScript(WKUserScript(source: base.map { $0.source(["channel": "wake"]) }.joined(separator: "\n"),
                                           injectionTime: .atDocumentStart, forMainFrameOnly: true, in: .defaultClient))
     controller.addUserScript(WKUserScript(source: SharedScript.devHooks.source(["channel": "wakeDev"]),
@@ -143,6 +144,20 @@ func run() {
     let foxes = eval(view, SharedScript.findCount.source(["query": "QUICK brown", "caseSensitive": false])) as? Int
     check("find-count counts case-insensitively", (foxes ?? 0) >= 1, foxes as Any)
     check("find-count honours case", eval(view, SharedScript.findCount.source(["query": "QUICK brown", "caseSensitive": true])) as? Int == 0)
+
+    _ = eval(view, "document.getElementById('user').focus()", world: .page)
+    let focused = recorder.first("wake", "passwords", where: { $0["event"] as? String == "focus" })
+    check("passwords reports a focused username field", focused?["field"] as? String == "username", focused as Any)
+    let filled = eval(view, "__wakePasswords.fill('ann', 's3cret \\'quoted\\'')") as? Bool
+    let values = eval(view, "[document.getElementById('user').value, document.getElementById('pass').value].join('|')", world: .page) as? String
+    check("passwords fills the login form", filled == true && values == "ann|s3cret 'quoted'", values as Any)
+    _ = eval(view, "document.getElementById('login').requestSubmit()", world: .page)
+    let submitted = recorder.first("wake", "passwords", where: { $0["event"] as? String == "submit" })
+    check("passwords reports a sign-in on submit",
+          submitted?["username"] as? String == "ann" && submitted?["password"] as? String == "s3cret 'quoted'" && submitted?["isNew"] as? Bool == false,
+          submitted as Any)
+    check("passwords never reports a password on focus or typing",
+          !recorder.messages.contains { $0.body["type"] as? String == "passwords" && $0.body["event"] as? String != "submit" && $0.body["password"] != nil })
 
     let restored = eval(view, SharedScript.momentRestore.source(["key": "The quick brown", "prefix": "over the lazy dog. ", "scrollY": 0, "scrollFraction": 0])) as? Bool
     check("moment-restore finds the second match", restored == true, restored as Any)

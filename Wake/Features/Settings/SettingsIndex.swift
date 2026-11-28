@@ -96,6 +96,25 @@ extension SettingsEntry {
                       detail: "Move the pointer to the bottom of the window to see your threads. ⌘K always opens it.",
                       keywords: ["peek", "hover", "edge", "pointer", "bottom"]),
 
+        // Passwords
+        SettingsEntry(id: "passwordsOffer", section: .passwords, group: "Options", label: "Offer to save passwords",
+                      detail: "After you sign in, Wake asks whether to keep the password.",
+                      keywords: ["save", "remember", "logins", "credentials", "password manager"]),
+        SettingsEntry(id: "passwordsAutofill", section: .passwords, group: "Options", label: "Fill passwords",
+                      detail: "Saved logins appear under a sign-in field.",
+                      keywords: ["autofill", "auto fill", "login", "username", "suggest"]),
+        SettingsEntry(id: "passwordsAuth", section: .passwords, group: "Options", label: "Ask for Touch ID",
+                      detail: "Before filling or showing a password. Not again for 5 minutes.",
+                      keywords: ["touch id", "biometric", "lock", "security", "fingerprint"]),
+        SettingsEntry(id: "passwordsImport", section: .passwords, label: "Import passwords",
+                      detail: "From Chrome, Arc, Brave, Edge and other Chromium browsers, or a CSV file from Safari, Firefox or 1Password.",
+                      keywords: ["import", "migrate", "csv", "chrome", "safari", "firefox", "1password", "bitwarden"]),
+        SettingsEntry(id: "passwordsExport", section: .passwords, label: "Export passwords",
+                      detail: "As a CSV file other password managers can read.",
+                      keywords: ["export", "csv", "backup"]),
+        SettingsEntry(id: "passwordsList", section: .passwords, label: "Saved passwords",
+                      keywords: ["logins", "accounts", "reused", "weak", "security", "generate"]),
+
         // Extensions
         SettingsEntry(id: "extensionFile", section: .extensions, group: "More ways", label: "Add from a file or folder",
                       detail: "A .crx, .xpi or .zip, or an unpacked extension folder. You can also drop one here.",

@@ -217,6 +217,7 @@ final class BrowserPage: NSObject, Identifiable {
         guard !isClosed else { return }
         isClosed = true
         hideTask?.cancel()
+        PasswordAutofill.shared.pageClosed(self)
         observations.forEach { $0.invalidate() }
         observations = []
         let old = webView
@@ -294,6 +295,8 @@ final class BrowserPage: NSObject, Identifiable {
             Extensions.storeButtonPressed(message)
         case "popOutCancel":
             isPickingPopOut = false
+        case "passwords":
+            PasswordAutofill.shared.receive(message, from: self)
         case "live":
             if message["reset"] as? Bool == true {
                 live = LiveState(media: live.media, httpStatus: live.httpStatus)
@@ -410,7 +413,10 @@ final class BrowserPage: NSObject, Identifiable {
                 MainActor.assumeIsolated {
                     self?.url = view.url
                     self?.onStateChange?()
-                    if let self { Extensions.pageChanged(self, .url) }
+                    if let self {
+                        Extensions.pageChanged(self, .url)
+                        PasswordAutofill.shared.pageNavigated(self)
+                    }
                 }
             },
             webView.observe(\.estimatedProgress, options: [.new]) { [weak self] view, _ in

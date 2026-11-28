@@ -19,9 +19,10 @@ enum WebScripts {
     }
 
     /// Link interception, the scroll probe, page state, scroll sync, live-chip
-    /// reporters and the extension stores' install button, in Wake's world.
+    /// reporters, password autofill and the extension stores' install button, in
+    /// Wake's world.
     static var baseScript: WKUserScript {
-        let scripts: [SharedScript] = [.linkInterceptor, .scrollProbe, .pageState, .scrollSync, .live]
+        let scripts: [SharedScript] = [.linkInterceptor, .scrollProbe, .pageState, .scrollSync, .live, .passwords]
         var sources = scripts.map { $0.source(["channel": handlerName]) }
         // "Add to Wake" on extension store pages; returns at once on every other site.
         if Extensions.isSupported {
