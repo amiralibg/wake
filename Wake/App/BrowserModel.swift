@@ -10,6 +10,8 @@ import SwiftUI
 final class BrowserModel {
     private(set) var thread: BrowserThread
     let palette = PaletteModel()
+    /// Find in page (⌘F).
+    let find = FindModel()
     let apps = PinnedAppsModel()
     /// In Zen, whether the app capsule has slid in from the left edge.
     var isCapsuleRevealed = false
@@ -17,6 +19,10 @@ final class BrowserModel {
     private(set) var isPaletteOpen = false
     private(set) var isSettingsOpen = false
     var settingsSection: SettingsSection = .appearance
+    /// What's typed in Settings' search field. Esc clears it before closing Settings.
+    var settingsQuery = ""
+    /// A setting to scroll to and outline, from search or ⌘K.
+    var settingsFocus: SettingsEntry.ID?
     var isZen: Bool = UserDefaults.standard.bool(forKey: "window.zen") {
         didSet {
             UserDefaults.standard.set(isZen, forKey: "window.zen")
@@ -102,6 +108,7 @@ final class BrowserModel {
         thread = resumable.map(BrowserThread.init(record:)) ?? BrowserThread()
         palette.recents = { [weak self] in self?.recents ?? [] }
         palette.openPages = { [weak self] in self?.openPages ?? [] }
+        palette.isAvailable = { [weak self] in $0.isAvailable(in: self) }
         activate(thread)
         apps.configurePage = { [weak self] page in
             // A pinned app is a place you return to; what you open from it joins the trail.
@@ -275,6 +282,12 @@ final class BrowserModel {
         case .suggestion(let text):
             if SearchKeyStore.hasBraveAPIKey { palette.query = text } else { open(BrowsingSettings.shared.searchURL(for: text)) }
         case .searchOnWeb(let query): open(BrowsingSettings.shared.searchURL(for: query))
+        case .command(let command):
+            hidePalette()
+            command.perform(in: self)
+        case .setting(let entry):
+            if isSettingsOpen { settingsQuery = "" }
+            showSettings(entry.section, focusing: entry.id)
         }
     }
 
@@ -386,40 +399,48 @@ final class BrowserModel {
 
     // MARK: Settings
 
-    func showSettings(_ section: SettingsSection? = nil) {
+    func showSettings(_ section: SettingsSection? = nil, focusing entry: SettingsEntry.ID? = nil) {
         isMomentsOpen = false
         isPaletteOpen = false
         isDeckOpen = false
         apps.dismiss()
         if let section { settingsSection = section }
+        settingsFocus = entry
         isSettingsOpen = true
     }
 
     func hideSettings() {
         isSettingsOpen = false
+        settingsQuery = ""
+        ShortcutRecorder.shared.cancel()
         refocusPage()
     }
 
     /// Esc: close whichever overlay is up.
     func dismissOverlays() {
-        if let page = webPage, page.isPickingPopOut {
+        let recorder = ShortcutRecorder.shared
+        if recorder.isRecording || recorder.pending != nil {
+            recorder.cancel()
+        } else if let page = webPage, page.isPickingPopOut {
             page.setPickingPopOut(false)
         } else if savedMoment != nil {
             finishSavingMoment()
         } else if isMomentsOpen {
             hideMoments()
         } else if isSettingsOpen {
-            hideSettings()
+            if settingsQuery.isEmpty { hideSettings() } else { settingsQuery = "" }
         } else if isPaletteOpen || isDeckOpen {
             hidePalette()
         } else if apps.active != nil {
             withAnimation(.chrome) { apps.dismiss() }
             refocusPage()
+        } else if find.isOpen {
+            hideFind()
         }
     }
 
     var hasOverlay: Bool {
-        isSettingsOpen || isPaletteOpen || isDeckOpen || apps.active != nil || isMomentsOpen || savedMoment != nil
+        isSettingsOpen || isPaletteOpen || isDeckOpen || apps.active != nil || isMomentsOpen || savedMoment != nil || find.isOpen
             || webPage?.isPickingPopOut == true
     }
 

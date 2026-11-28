@@ -32,9 +32,32 @@ struct SettingsDivider: View {
 struct SettingsRow<Control: View>: View {
     let label: String
     var detail: String?
+    var anchor: SettingsEntry.ID?
     @ViewBuilder let control: Control
 
+    init(label: String, detail: String? = nil, @ViewBuilder control: () -> Control) {
+        self.label = label
+        self.detail = detail
+        self.control = control()
+    }
+
+    /// A row from the search index: its label and description come from the entry
+    /// (`detail` replaces the description when it depends on state), and search can
+    /// scroll to it.
+    init(_ id: SettingsEntry.ID, detail: String? = nil, @ViewBuilder control: () -> Control) {
+        let entry = SettingsEntry.entry(id)
+        assert(entry != nil, "No settings entry \(id)")
+        self.label = entry?.label ?? id
+        self.detail = detail ?? entry?.detail
+        self.anchor = id
+        self.control = control()
+    }
+
     var body: some View {
+        content.settingsAnchor(anchor)
+    }
+
+    private var content: some View {
         ViewThatFits(in: .horizontal) {
             HStack(spacing: 16) {
                 labels
@@ -80,5 +103,41 @@ struct SettingsSegmented<Value: Hashable, Option: Identifiable>: View {
         .pickerStyle(.segmented)
         .labelsHidden()
         .fixedSize()
+    }
+}
+
+extension EnvironmentValues {
+    /// The setting search or ⌘K just jumped to, outlined for a moment.
+    @Entry var settingsHighlight: SettingsEntry.ID?
+}
+
+extension View {
+    /// Lets search scroll to this view and outline it.
+    @ViewBuilder func settingsAnchor(_ id: SettingsEntry.ID?) -> some View {
+        if let id {
+            modifier(SettingsAnchor(id: id))
+        } else {
+            self
+        }
+    }
+}
+
+private struct SettingsAnchor: ViewModifier {
+    let id: SettingsEntry.ID
+    @Environment(\.settingsHighlight) private var highlight
+
+    func body(content: Content) -> some View {
+        content
+            .background {
+                if highlight == id {
+                    RoundedRectangle(cornerRadius: 9, style: .continuous)
+                        .fill(.tint.opacity(0.1))
+                        .overlay(RoundedRectangle(cornerRadius: 9, style: .continuous).strokeBorder(.tint, lineWidth: 1.5))
+                        .padding(2)
+                        .transition(.opacity)
+                }
+            }
+            .animation(.easeOut(duration: 0.35), value: highlight == id)
+            .id(id)
     }
 }

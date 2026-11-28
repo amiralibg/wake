@@ -20,6 +20,9 @@ struct PaletteRow: View {
                 }
             }
             Spacer(minLength: 8)
+            if let combo = shortcut {
+                Keycaps(combo: combo)
+            }
             if isSelected {
                 KeyHint(item.isRefinement && SearchKeyStore.hasBraveAPIKey ? "tab" : "↩")
             }
@@ -45,6 +48,14 @@ struct PaletteRow: View {
             Favicon(url: URL(string: "https://\(page.url.host() ?? "")/favicon.ico"), host: page.url.host() ?? "", size: 22)
         case .openPage(let page):
             Favicon(url: page.url.isFileURL ? nil : URL(string: "https://\(page.url.host() ?? "")/favicon.ico"), host: page.url.host() ?? "", size: 22)
+        case .command(let command):
+            symbol(command.category.symbol)
+        case .setting(let entry):
+            Image(systemName: entry.section.symbol)
+                .font(.system(size: 10.5, weight: .semibold))
+                .foregroundStyle(.white)
+                .frame(width: 20, height: 20)
+                .background(entry.section.tint, in: .rect(cornerRadius: 5, style: .continuous))
         case .suggestion:
             symbol("magnifyingglass")
         case .searchOnWeb:
@@ -67,7 +78,15 @@ struct PaletteRow: View {
         case .recent(let page): page.title.isEmpty ? (page.url.host() ?? "") : page.title
         case .openPage(let page): page.title.isEmpty ? (page.url.isFileURL ? page.url.lastPathComponent : page.url.host() ?? "") : page.title
         case .searchOnWeb(let query): "Search \(BrowsingSettings.shared.searchName) for “\(query)”"
+        case .command(let command): command.title
+        case .setting(let entry): entry.label
         }
+    }
+
+    /// A command's keys, so the palette teaches them.
+    private var shortcut: KeyCombo? {
+        guard case .command(let command) = item else { return nil }
+        return ShortcutStore.shared.combo(for: command)
     }
 
     private var subtitle: String? {
@@ -77,6 +96,8 @@ struct PaletteRow: View {
         case .recent(let page): page.url.host()
         case .openPage(let page):
             page.threadTitle.map { "\($0) · \(page.url.absoluteString)" } ?? page.url.absoluteString
+        case .command(let command): command.category.title
+        case .setting(let entry): "Settings › \(entry.path)"
         case .suggestion, .searchOnWeb: nil
         }
     }

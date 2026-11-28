@@ -8,15 +8,15 @@ struct DeveloperSettingsSection: View {
         @Bindable var developer = developer
         VStack(alignment: .leading, spacing: 16) {
             SettingsGroup(title: "Developer mode") {
-                SettingsRow(label: "On automatically for localhost", detail: "Captures console, network and hot reload for local dev servers. Any thread can switch it on or off (⌥⌘D).") {
+                SettingsRow("devAuto", detail: "Captures console, network and hot reload for local dev servers. Any thread can switch it on or off (⌥⌘D).") {
                     Toggle("", isOn: $developer.autoEnableForLocalhost).toggleStyle(.switch).labelsHidden()
                 }
                 SettingsDivider()
-                SettingsRow(label: "Find local dev servers", detail: "Checks ports 3000–3010, 4200, 5173–5180, 6006, 8000 and 8080 and lists them in the app capsule.") {
+                SettingsRow("findServers", detail: "Checks ports 3000–3010, 4200, 5173–5180, 6006, 8000 and 8080 and lists them in the app capsule.") {
                     Toggle("", isOn: $developer.scansPorts).toggleStyle(.switch).labelsHidden()
                 }
                 SettingsDivider()
-                SettingsRow(label: "Open in editor", detail: "Where console errors and inspected components open.") {
+                SettingsRow("editor", detail: "Where console errors and inspected components open.") {
                     Picker("", selection: $developer.editor) {
                         ForEach(CodeEditor.allCases) { Text($0.label).tag($0) }
                     }
@@ -24,11 +24,12 @@ struct DeveloperSettingsSection: View {
                     .fixedSize()
                 }
                 SettingsDivider()
-                SettingsRow(label: "Web Inspector", detail: "WebKit's full inspector (debugger, Timelines, Layers) from DevTools and ⌥⇧⌘I, and Inspect Element in page menus. Applies to pages opened afterwards.") {
+                SettingsRow("webInspector", detail: "WebKit's full inspector (debugger, Timelines, Layers) from DevTools and ⌥⇧⌘I, and Inspect Element in page menus. Applies to pages opened afterwards.") {
                     Toggle("", isOn: $developer.webInspectorEnabled).toggleStyle(.switch).labelsHidden()
                 }
             }
             ProjectsGroup(editing: $editing)
+                .settingsAnchor("projects")
         }
         .sheet(item: $editing) { project in
             ProjectEditor(project: project)

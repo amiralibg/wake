@@ -36,6 +36,7 @@ struct MainWindowView: View {
             DeckLayer()
             ColumnModeIsland()
             SaveMomentIsland()
+            FindIsland()
             MomentsLibrary()
             PaletteOverlay()
             SettingsOverlay()

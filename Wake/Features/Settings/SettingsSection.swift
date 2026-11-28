@@ -1,7 +1,7 @@
 import SwiftUI
 
 enum SettingsSection: String, CaseIterable, Identifiable {
-    case general, search, appearance, deck, extensions, developer, privacy
+    case general, shortcuts, search, appearance, deck, extensions, developer, privacy
 
     var id: Self { self }
 
@@ -10,6 +10,7 @@ enum SettingsSection: String, CaseIterable, Identifiable {
     var symbol: String {
         switch self {
         case .general: "gearshape.fill"
+        case .shortcuts: "command"
         case .search: "magnifyingglass"
         case .appearance: "circle.lefthalf.filled"
         case .deck: "rectangle.on.rectangle"
@@ -22,6 +23,7 @@ enum SettingsSection: String, CaseIterable, Identifiable {
     var tint: Color {
         switch self {
         case .general: Color(nsColor: .systemGray)
+        case .shortcuts: Color(nsColor: .systemGreen)
         case .search: Color(nsColor: .systemOrange)
         case .appearance: Color(nsColor: .systemIndigo)
         case .deck: Color(nsColor: .systemTeal)
@@ -34,7 +36,8 @@ enum SettingsSection: String, CaseIterable, Identifiable {
     /// Words the sidebar search matches, beyond the title.
     var keywords: [String] {
         switch self {
-        case .general: ["links", "columns", "restore", "capsule", "shortcuts", "keyboard", "welcome", "onboarding", "tour"]
+        case .general: ["links", "columns", "restore", "capsule", "welcome", "onboarding", "tour", "updates"]
+        case .shortcuts: ["keyboard", "keys", "hotkeys", "keybindings", "commands"]
         case .search: ["engine", "default", "duckduckgo", "google", "brave", "bing", "ecosia", "startpage", "kagi", "perplexity", "yahoo", "custom", "suggestions", "api", "key", "results"]
         case .appearance: ["theme", "dark", "light", "accent", "color", "glass", "gap", "corner", "radius", "width", "trail", "layout"]
         case .deck: ["sink", "tabs", "waterline", "playing", "unsaved", "afloat"]

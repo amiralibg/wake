@@ -19,10 +19,11 @@ struct SearchSettingsSection: View {
                 }
                 .padding(14)
                 .animation(.chrome, value: browsing.searchEngine)
+                .settingsAnchor("searchEngine")
             }
             SettingsGroup {
                 SettingsRow(
-                    label: "Search suggestions",
+                    "suggestions",
                     detail: "Suggestions from \(browsing.effectiveEngine.suggestionSource) while you type. Off, nothing leaves Wake until you press ↩."
                 ) {
                     Toggle("", isOn: $browsing.showsSearchSuggestions)
@@ -140,7 +141,7 @@ private struct BraveKeyGroup: View {
     var body: some View {
         SettingsGroup(title: "Results inside ⌘K") {
             SettingsRow(
-                label: "Brave Search API key",
+                "braveKey",
                 detail: "Optional. Shows real results in the palette without opening a page. Stored in your Keychain."
             ) {
                 HStack(spacing: 8) {

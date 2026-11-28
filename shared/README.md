@@ -32,7 +32,7 @@ On WebKit, Wake's own scripts run in an isolated content world (`WKContentWorld.
 | File | World | Channel |
 |---|---|---|
 | `link-interceptor.js`, `scroll-probe.js`, `page-state.js`, `scroll-sync.js`, `live.js` | Wake | `wake` |
-| `moment-capture.js`, `moment-restore.js`, `visible-text.js`, `favicon.js` | Wake | — |
+| `moment-capture.js`, `moment-restore.js`, `visible-text.js`, `favicon.js`, `find-count.js` | Wake | — |
 | `popout-picker.js` | Wake | `wake` |
 | `extension-stores.js` (Chrome Web Store, Edge Add-ons, Firefox Add-ons pages only) | Wake | `wake` |
 | `popout-isolate.js` | Wake (the Pop Out's own page) | `wakePopOut` |

@@ -584,7 +584,25 @@ final class ExtensionLibrary: NSObject {
         }
     }
 
+    /// Each enabled extension's keyboard commands, for Settings ▸ Shortcuts.
+    var commandShortcuts: [(extensionName: String, title: String, combo: KeyCombo)] {
+        enabled.flatMap { item -> [(String, String, KeyCombo)] in
+            guard let context = item.context else { return [] }
+            return context.commands.compactMap { command in
+                guard let key = command.activationKey, !key.isEmpty else { return nil }
+                return (item.name, command.title, KeyCombo(extensionKey: key, flags: command.modifierFlags))
+            }
+        }
+    }
+
+    /// The extension whose command uses `combo`.
+    func commandName(for combo: KeyCombo) -> String? {
+        commandShortcuts.first { $0.combo == combo }?.extensionName
+    }
+
     private func performCommand(for event: NSEvent) -> Bool {
+        // Settings ▸ Shortcuts is listening for a new shortcut: the key is for it.
+        guard !ShortcutRecorder.shared.isRecording else { return false }
         let modifiers = event.modifierFlags.intersection([.command, .option, .control])
         guard !modifiers.isEmpty, !Self.menu(NSApp.mainMenu, claims: event) else { return false }
         for item in enabled {

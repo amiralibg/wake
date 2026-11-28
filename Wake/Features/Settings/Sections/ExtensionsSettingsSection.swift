@@ -29,6 +29,7 @@ private struct ExtensionsSettingsContent: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 16) {
             StoresStrip(open: open)
+                .settingsAnchor("extensionStores")
 
             if !browsersWithExtensions.isEmpty {
                 SettingsGroup(title: "Bring your extensions") {
@@ -43,14 +44,14 @@ private struct ExtensionsSettingsContent: View {
 
             SettingsGroup(title: "More ways") {
                 SettingsRow(
-                    label: "Add from a file or folder",
+                    "extensionFile",
                     detail: "A .crx, .xpi or .zip, or an unpacked extension folder. You can also drop one here."
                 ) {
                     Button("Choose…") { Extensions.chooseAndInstall() }
                         .disabled(library.isPreparingInstall)
                 }
                 SettingsDivider()
-                SettingsRow(label: "Keep extensions up to date", detail: updateDetail) {
+                SettingsRow("extensionUpdates", detail: updateDetail) {
                     HStack(spacing: 8) {
                         if library.isCheckingForUpdates { ProgressView().controlSize(.small) }
                         Button("Check Now") { Task { await library.checkForUpdates() } }

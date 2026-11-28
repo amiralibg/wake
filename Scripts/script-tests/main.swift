@@ -140,6 +140,9 @@ func run() {
           captured?["selection"] as? String == "The quick brown" && (captured?["prefix"] as? String ?? "").hasSuffix("lazy dog. "), captured as Any)
     check("moment-capture reads the text", (captured?["text"] as? String ?? "").contains("Card title"))
     check("visible-text honours maxText", (eval(view, SharedScript.visibleText.source(["maxText": 5])) as? String)?.count == 5)
+    let foxes = eval(view, SharedScript.findCount.source(["query": "QUICK brown", "caseSensitive": false])) as? Int
+    check("find-count counts case-insensitively", (foxes ?? 0) >= 1, foxes as Any)
+    check("find-count honours case", eval(view, SharedScript.findCount.source(["query": "QUICK brown", "caseSensitive": true])) as? Int == 0)
 
     let restored = eval(view, SharedScript.momentRestore.source(["key": "The quick brown", "prefix": "over the lazy dog. ", "scrollY": 0, "scrollFraction": 0])) as? Bool
     check("moment-restore finds the second match", restored == true, restored as Any)

@@ -15,7 +15,7 @@ struct PrivacySettingsSection: View {
         VStack(alignment: .leading, spacing: 16) {
             SettingsGroup(title: "Bring your data") {
                 SettingsRow(
-                    label: "Import from another browser",
+                    "importBrowser",
                     detail: "History, searches, cookies and site storage from Chrome, Arc, Dia, Brave, Edge, Firefox, Zen, Safari and more."
                 ) {
                     Button("Import…") {
@@ -31,7 +31,7 @@ struct PrivacySettingsSection: View {
     private var dataGroup: some View {
         SettingsGroup(title: "Your data") {
             SettingsRow(
-                label: "Clear browsing history",
+                "clearHistory",
                 detail: "Forgets visited pages and searches (History, and Recent in ⌘K). Threads and pinned apps stay."
             ) {
                 Button(done.contains(.history) ? "Cleared" : "Clear…") { confirming = .history }
@@ -39,7 +39,7 @@ struct PrivacySettingsSection: View {
             }
             SettingsDivider()
             SettingsRow(
-                label: "Clear cookies and website data",
+                "clearData",
                 detail: "Signs you out of every site and removes caches, local storage and cookies."
             ) {
                 Button(done.contains(.websiteData) ? "Cleared" : "Clear…") { confirming = .websiteData }

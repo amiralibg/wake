@@ -12,48 +12,41 @@ struct BrowserCommands: Commands {
     /// is the fallback.
     private var browser: BrowserModel? { focusedBrowser ?? BrowserModel.active }
 
+    /// Read in `body` so the menus rebuild when a shortcut changes.
+    @AppStorage(ShortcutStore.defaultsKey) private var shortcutOverrides = ""
+    private var shortcuts: ShortcutStore {
+        _ = shortcutOverrides
+        return .shared
+    }
+
     var body: some Commands {
         CommandGroup(after: .appInfo) {
-            Button("Check for Updates…") { AppUpdater.shared.checkForUpdates() }
+            item(.checkForUpdates, "Check for Updates…")
                 .disabled(!AppUpdater.shared.canCheckForUpdates)
         }
 
         CommandGroup(replacing: .appSettings) {
-            Button("Settings…") { browser?.showSettings() }
-                .keyboardShortcut(",", modifiers: .command)
-            Button("Extensions…") { browser?.showSettings(.extensions) }
+            item(.settings, "Settings…")
+            item(.extensions, "Extensions…")
+            item(.showShortcuts, "Keyboard Shortcuts…")
         }
 
         CommandGroup(after: .newItem) {
-            Button("New Column") { browser?.showPalette(target: .newColumn) }
-                .keyboardShortcut("t", modifiers: .command)
-            Button("New Thread") { browser?.newThread() }
-                .keyboardShortcut("n", modifiers: [.command, .shift])
-            Button("Open Location…") { browser?.showPalette(target: .currentColumn) }
-                .keyboardShortcut("l", modifiers: .command)
-            Button("Open File…") { browser?.openLocalFile() }
-                .keyboardShortcut("o", modifiers: .command)
-            Button("Reopen Closed Column") { browser?.trail.reopenClosed() }
-                .keyboardShortcut("t", modifiers: [.command, .shift])
-            Button("Duplicate Column") { browser?.trail.duplicateFocused() }
-                .keyboardShortcut("d", modifiers: [.command, .shift])
+            item(.newColumn)
+            item(.newThread)
+            item(.openLocation, "Open Location…")
+            item(.openFile, "Open File…")
+            item(.reopenColumn)
+            item(.duplicateColumn)
             Divider()
-            Button("Import from Another Browser…") { browser?.isImportingBrowserData = true }
-            Button("Add Extension…") { Extensions.chooseAndInstall() }
+            item(.importData, "Import from Another Browser…")
+            item(.addExtension, "Add Extension…")
                 .disabled(!Extensions.isSupported)
             Divider()
             // ⌘W closes the column (or overlay); ⇧⌘W the window, as in Safari. The
             // action looks the browser up when it runs, so it never goes stale.
-            Button("Close Column") { closeCommand() }
-                .keyboardShortcut("w", modifiers: .command)
-            Button("Close Window") {
-                if let panel = NSApp.keyWindow as? PopOutPanel {
-                    panel.popOut.onClose()
-                } else {
-                    (browser?.window ?? NSApp.keyWindow)?.performClose(nil)
-                }
-            }
-                .keyboardShortcut("w", modifiers: [.command, .shift])
+            item(.closeColumn)
+            item(.closeWindow)
         }
 
         // A browser has nothing to save. Replacing this group also removes SwiftUI's
@@ -62,29 +55,23 @@ struct BrowserCommands: Commands {
 
         CommandGroup(after: .pasteboard) {
             Divider()
-            Button("Copy Page Address") { browser?.copyPageURL() }
-                .keyboardShortcut("c", modifiers: [.command, .shift])
+            item(.copyAddress)
+            Divider()
+            item(.findInPage, "Find…")
+            item(.findNext)
+            item(.findPrevious)
         }
 
         CommandGroup(after: .toolbar) {
-            Button(browser?.isZen == true ? "Leave Zen" : "Enter Zen") {
-                withAnimation(.trail) { browser?.isZen.toggle() }
-            }
-            .keyboardShortcut("\\", modifiers: .command)
+            item(.zen, browser?.isZen == true ? "Leave Zen" : "Enter Zen")
             Divider()
-            Button("Zoom In") { browser?.webPage?.zoomIn() }
-                .keyboardShortcut("=", modifiers: .command)
-            Button("Zoom Out") { browser?.webPage?.zoomOut() }
-                .keyboardShortcut("-", modifiers: .command)
-            Button("Actual Size") { browser?.webPage?.resetZoom() }
-                .keyboardShortcut("0", modifiers: .command)
+            item(.zoomIn, "Zoom In")
+            item(.zoomOut, "Zoom Out")
+            item(.actualSize, "Actual Size")
             Divider()
-            Button("Wider Column") { browser?.trail.resizeFocused(by: 0.1) }
-                .keyboardShortcut("=", modifiers: [.command, .option])
-            Button("Narrower Column") { browser?.trail.resizeFocused(by: -0.1) }
-                .keyboardShortcut("-", modifiers: [.command, .option])
-            Button("Default Column Width") { if let page = browser?.page { browser?.trail.resetWidth(of: page) } }
-                .keyboardShortcut("0", modifiers: [.command, .option])
+            item(.widerColumn, "Wider Column")
+            item(.narrowerColumn, "Narrower Column")
+            item(.defaultColumnWidth, "Default Column Width")
             if let page = browser?.webPage, let url = page.url, SiteWidthRules.canHaveRule(url) {
                 if SiteWidthRules.shared.minimumWidth(for: url) == nil {
                     Button("Keep This Width on This Site") { browser?.keepWidthForSite(of: page) }
@@ -96,62 +83,41 @@ struct BrowserCommands: Commands {
         }
 
         CommandMenu("Go") {
-            Button("Command Palette") { browser?.togglePalette() }
-                .keyboardShortcut("k", modifiers: .command)
+            item(.commandPalette, "Command Palette")
             Divider()
-            Button("Previous Column") { browser?.trail.focusPrevious() }
-                .keyboardShortcut("[", modifiers: .command)
-            Button("Next Column") { browser?.trail.focusNext() }
-                .keyboardShortcut("]", modifiers: .command)
-            Button("Column to the Left") { browser?.trail.focusPrevious() }
-                .keyboardShortcut(.leftArrow, modifiers: [.command, .option])
-            Button("Column to the Right") { browser?.trail.focusNext() }
-                .keyboardShortcut(.rightArrow, modifiers: [.command, .option])
-            Button("Show All Columns") { browser?.toggleColumnList() }
-                .keyboardShortcut("a", modifiers: [.command, .shift])
-            Button("Cycle Columns") { browser?.trail.cycleFocus(forward: true) }
-                .keyboardShortcut(.tab, modifiers: .control)
-            Button("Cycle Columns Backwards") { browser?.trail.cycleFocus(forward: false) }
-                .keyboardShortcut(.tab, modifiers: [.control, .shift])
+            item(.previousColumn, "Previous Column")
+            item(.nextColumn, "Next Column")
+            item(.columnLeft, "Column to the Left")
+            item(.columnRight, "Column to the Right")
+            item(.showAllColumns, "Show All Columns")
+            item(.cycleColumns, "Cycle Columns")
+            item(.cycleColumnsBackwards, "Cycle Columns Backwards")
             Menu("Column") {
                 ForEach(1..<9) { number in
                     Button("Column \(number)") { browser?.trail.focus(number - 1) }
                         .keyboardShortcut(KeyEquivalent(Character("\(number)")), modifiers: .command)
                 }
-                Button("Last Column") { browser.map { $0.trail.focus($0.trail.columns.count - 1) } }
-                    .keyboardShortcut("9", modifiers: .command)
+                item(.lastColumn, "Last Column")
             }
             Divider()
-            Button("Move Column Left") { browser?.trail.moveFocused(by: -1) }
-                .keyboardShortcut(.leftArrow, modifiers: [.command, .control])
-            Button("Move Column Right") { browser?.trail.moveFocused(by: 1) }
-                .keyboardShortcut(.rightArrow, modifiers: [.command, .control])
+            item(.moveColumnLeft, "Move Column Left")
+            item(.moveColumnRight, "Move Column Right")
             Divider()
-            Button("Back in Page") { browser?.page?.goBack() }
-                .keyboardShortcut("[", modifiers: [.command, .option])
-            Button("Forward in Page") { browser?.page?.goForward() }
-                .keyboardShortcut("]", modifiers: [.command, .option])
+            item(.back, "Back in Page")
+            item(.forward, "Forward in Page")
             Divider()
-            Button("Reload Page") { browser?.webPage?.reload() }
-                .keyboardShortcut("r", modifiers: .command)
-            Button("Reload Without Cache") { browser?.webPage?.reloadFromOrigin() }
-                .keyboardShortcut("r", modifiers: [.command, .option])
-            Button("Stop Loading") { browser?.webPage?.stopLoading() }
-                .keyboardShortcut(".", modifiers: .command)
+            item(.reload, "Reload Page")
+            item(.reloadWithoutCache, "Reload Without Cache")
+            item(.stopLoading, "Stop Loading")
             Divider()
-            Button("Pop Out Element…") { browser?.togglePopOutPicker() }
-                .keyboardShortcut("o", modifiers: [.command, .option])
+            item(.popOut, "Pop Out Element…")
         }
 
         CommandMenu("Moments") {
-            Button("Save Moment") { browser?.saveMoment() }
-                .keyboardShortcut("d", modifiers: .command)
-            Button(browser?.isMomentsOpen == true ? "Hide Moments" : "Show Moments") { browser?.toggleMoments() }
-                .keyboardShortcut("b", modifiers: [.command, .option])
-            Button("Show History") { browser?.showHistory() }
-                .keyboardShortcut("y", modifiers: .command)
-            Button("Show Searches") { browser?.showHistory(.searches) }
-                .keyboardShortcut("y", modifiers: [.command, .option])
+            item(.saveMoment, "Save Moment")
+            item(.moments, browser?.isMomentsOpen == true ? "Hide Moments" : "Show Moments")
+            item(.history, "Show History")
+            item(.searches, "Show Searches")
             Divider()
             ForEach(MomentShelf.smart, id: \.self) { shelf in
                 Button(shelf.title) { browser?.showMoments(shelf) }
@@ -159,33 +125,22 @@ struct BrowserCommands: Commands {
         }
 
         CommandMenu("Develop") {
-            Button(browser?.webPage?.isDeveloperMode == true ? "Turn Off Developer Mode for Thread" : "Turn On Developer Mode for Thread") {
-                browser?.toggleDeveloperMode()
-            }
-            .keyboardShortcut("d", modifiers: [.command, .option])
+            item(.developerMode, browser?.webPage?.isDeveloperMode == true ? "Turn Off Developer Mode for Thread" : "Turn On Developer Mode for Thread")
             Button("Developer Mode: Automatic") { browser?.resetDeveloperMode() }
                 .disabled(browser?.thread.developerMode == nil)
             Divider()
-            Button("DevTools") { browser?.toggleDevTools() }
-                .keyboardShortcut("i", modifiers: [.command, .option])
-            Button("Web Inspector") { browser?.showWebInspector() }
-                .keyboardShortcut("i", modifiers: [.command, .option, .shift])
-            Button("Inspect Element") { browser?.inspectElement() }
-                .keyboardShortcut("c", modifiers: [.command, .option, .shift])
-            Button("JavaScript Console") { browser?.showDevTools(.console) }
-                .keyboardShortcut("j", modifiers: [.command, .option])
-            Button("Show Page Source") { browser?.showDevTools(.sources) }
-                .keyboardShortcut("u", modifiers: [.command, .option])
-            Button("Network") { browser?.showDevTools(.network) }
-            Button("Storage") { browser?.showDevTools(.storage) }
-            Button("Performance & Audit") { browser?.showDevTools(.performance) }
+            item(.devTools, "DevTools")
+            item(.webInspector, "Web Inspector")
+            item(.inspectElement, "Inspect Element")
+            item(.console, "JavaScript Console")
+            item(.pageSource, "Show Page Source")
+            item(.network, "Network")
+            item(.storage, "Storage")
+            item(.performance, "Performance & Audit")
             Divider()
-            Button("Empty Caches") { Task { await DevToolsSession.emptyCaches() } }
-                .keyboardShortcut("e", modifiers: [.command, .option])
-            Button("Inspect Components") { browser?.toggleComponentInspector() }
-                .keyboardShortcut("c", modifiers: [.command, .option])
-            Button("Responsive Preview") { browser?.openResponsivePreview(.defaultPhone) }
-                .keyboardShortcut("p", modifiers: [.command, .option])
+            item(.emptyCaches, "Empty Caches")
+            item(.inspectComponents, "Inspect Components")
+            item(.responsivePreview, "Responsive Preview")
             Menu("Preview on Device") {
                 DevicePresetButtons { browser?.openResponsivePreview($0) }
             }
@@ -194,8 +149,7 @@ struct BrowserCommands: Commands {
         }
 
         CommandMenu("Apps") {
-            Button("Pin Page as App") { if let page = browser?.webPage { browser?.pin(page) } }
-                .keyboardShortcut("p", modifiers: [.command, .shift])
+            item(.pinApp, "Pin Page as App")
             Divider()
             ForEach(Array((browser?.apps.apps ?? []).prefix(9).enumerated()), id: \.element.id) { index, app in
                 Button(app.title) { browser?.toggleApp(index: index) }
@@ -204,15 +158,9 @@ struct BrowserCommands: Commands {
         }
     }
 
-    /// With no browser window at all (e.g. only Settings is up), ⌘W closes whatever is key.
-    private func closeCommand() {
-        // A pop-out in front closes itself, not a column behind it.
-        if let panel = NSApp.keyWindow as? PopOutPanel {
-            panel.popOut.onClose()
-        } else if let browser = BrowserModel.active ?? focusedBrowser {
-            browser.closeCommand()
-        } else {
-            NSApp.keyWindow?.performClose(nil)
-        }
+    /// A menu item for a registered command, with the keys Settings ▸ Shortcuts gives it.
+    private func item(_ command: WakeCommand, _ title: String? = nil) -> some View {
+        Button(title ?? command.title) { command.perform(in: browser) }
+            .keyboardShortcut(shortcuts.combo(for: command)?.keyboardShortcut)
     }
 }

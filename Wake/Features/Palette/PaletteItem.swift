@@ -28,6 +28,10 @@ enum PaletteItem: Identifiable, Hashable {
     case recent(RecentPage)
     case openPage(OpenPage)
     case searchOnWeb(String)
+    /// One of Wake's commands, run from the palette.
+    case command(WakeCommand)
+    /// A row in Settings, opened and outlined.
+    case setting(SettingsEntry)
 
     var id: String {
         switch self {
@@ -37,6 +41,8 @@ enum PaletteItem: Identifiable, Hashable {
         case .recent(let page): "recent:\(page.url)"
         case .openPage(let page): "page:\(page.threadID):\(page.columnIndex):\(page.url)"
         case .searchOnWeb(let query): "web:\(query)"
+        case .command(let command): "command:\(command.rawValue)"
+        case .setting(let entry): "setting:\(entry.id)"
         }
     }
 }

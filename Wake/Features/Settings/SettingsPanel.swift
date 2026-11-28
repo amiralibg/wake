@@ -4,22 +4,28 @@ import SwiftUI
 /// sections and a content card.
 struct SettingsPanel: View {
     @Bindable var browser: BrowserModel
+    /// The row outlined after a jump; cleared after a moment.
+    @State private var highlight: SettingsEntry.ID?
 
     var body: some View {
         HStack(spacing: 0) {
-            SettingsSidebar(selection: $browser.settingsSection, onClose: browser.hideSettings)
+            SettingsSidebar(browser: browser)
                 .frame(width: 214)
-            ScrollView {
-                VStack(alignment: .leading, spacing: 16) {
-                    Text(browser.settingsSection.title)
-                        .font(.system(size: 20, weight: .bold))
-                    content
+            ScrollViewReader { proxy in
+                ScrollView {
+                    VStack(alignment: .leading, spacing: 16) {
+                        Text(browser.settingsSection.title)
+                            .font(.system(size: 20, weight: .bold))
+                        content
+                    }
+                    .padding(.horizontal, 24)
+                    .padding(.vertical, 18)
+                    .frame(maxWidth: .infinity, alignment: .leading)
                 }
-                .padding(.horizontal, 24)
-                .padding(.vertical, 18)
-                .frame(maxWidth: .infinity, alignment: .leading)
+                .scrollIndicators(.automatic)
+                .environment(\.settingsHighlight, highlight)
+                .task(id: browser.settingsFocus) { await reveal(browser.settingsFocus, with: proxy) }
             }
-            .scrollIndicators(.automatic)
             .background(Color(nsColor: .windowBackgroundColor).opacity(0.92), in: .rect(cornerRadius: 12, style: .continuous))
             .overlay(RoundedRectangle(cornerRadius: 12, style: .continuous).stroke(.primary.opacity(0.08), lineWidth: 0.5))
             .padding([.vertical, .trailing], 8)
@@ -32,9 +38,26 @@ struct SettingsPanel: View {
         .animation(.snappy, value: browser.settingsSection)
     }
 
+    /// Scrolls to the row search chose and outlines it for a moment.
+    private func reveal(_ id: SettingsEntry.ID?, with proxy: ScrollViewProxy) async {
+        guard let id else {
+            highlight = nil
+            return
+        }
+        // The section may have just switched: let its rows lay out first.
+        try? await Task.sleep(for: .milliseconds(60))
+        guard !Task.isCancelled else { return }
+        withAnimation(.snappy) { proxy.scrollTo(id, anchor: UnitPoint(x: 0.5, y: 0.3)) }
+        highlight = id
+        try? await Task.sleep(for: .seconds(1.6))
+        guard !Task.isCancelled else { return }
+        highlight = nil
+    }
+
     @ViewBuilder private var content: some View {
         switch browser.settingsSection {
         case .general: GeneralSettingsSection()
+        case .shortcuts: ShortcutsSettingsSection()
         case .search: SearchSettingsSection()
         case .appearance: AppearanceSettingsSection()
         case .deck: DeckSettingsSection()

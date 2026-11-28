@@ -27,8 +27,36 @@ final class PaletteModel {
 
     private var trimmedQuery: String { query.trimmingCharacters(in: .whitespacesAndNewlines) }
 
+    /// `>` first lists only commands and settings, like a code editor's palette.
+    static let commandPrefix = ">"
+
+    /// Whether a command can run in the palette's window, for leaving out ones that can't.
+    @ObservationIgnored var isAvailable: (WakeCommand) -> Bool = { _ in true }
+
+    var isCommandMode: Bool { trimmedQuery.hasPrefix(Self.commandPrefix) }
+
+    private func commandSections(for query: String, commandLimit: Int, settingLimit: Int) -> [PaletteSection] {
+        let commands = SettingsSearch.commands(for: query, limit: commandLimit + 4)
+            .filter { $0.isInPalette && isAvailable($0) }
+            .prefix(commandLimit)
+        // Shortcut entries would repeat the commands above.
+        let settings = SettingsSearch.results(for: query, in: SettingsEntry.all.filter { $0.section != .shortcuts || $0.id == "columnMode" }, limit: settingLimit)
+        var sections: [PaletteSection] = []
+        if !commands.isEmpty { sections.append(PaletteSection(title: "Commands", items: commands.map(PaletteItem.command))) }
+        if !settings.isEmpty { sections.append(PaletteSection(title: "Settings", items: settings.map(PaletteItem.setting))) }
+        return sections
+    }
+
     var sections: [PaletteSection] {
         let query = trimmedQuery
+        if isCommandMode {
+            let rest = String(query.dropFirst(Self.commandPrefix.count)).trimmingCharacters(in: .whitespaces)
+            if rest.isEmpty {
+                let all = WakeCommand.allCases.filter { $0.isInPalette && isAvailable($0) }
+                return [PaletteSection(title: "Commands", items: all.map(PaletteItem.command))]
+            }
+            return commandSections(for: rest, commandLimit: 12, settingLimit: 6)
+        }
         let matchingPages = query.isEmpty ? [] : openPages().filter { Self.matches(query, title: $0.title, url: $0.url) }
         let openURLs = Set(matchingPages.map(\.url))
         let matchingRecents = recents()
@@ -55,6 +83,11 @@ final class PaletteModel {
         if address == nil, results.isEmpty {
             // ↩ on typed words searches, as in every browser's address bar.
             sections.append(PaletteSection(title: nil, items: [.searchOnWeb(query)]))
+        }
+        // Typed words that name a command ("reload", "zen") list it below the search,
+        // so ↩ still searches; ↓ reaches it. Not for addresses.
+        if address == nil, query.count >= 2 {
+            sections += commandSections(for: query, commandLimit: 3, settingLimit: 2)
         }
         if !matchingRecents.isEmpty {
             sections.append(PaletteSection(title: "Recent", items: matchingRecents))
@@ -106,7 +139,7 @@ final class PaletteModel {
         selection = 0
         let query = trimmedQuery
         let settings = BrowsingSettings.shared
-        guard !query.isEmpty, URLInput.url(from: query) == nil,
+        guard !query.isEmpty, !query.hasPrefix(Self.commandPrefix), URLInput.url(from: query) == nil,
               settings.showsSearchSuggestions || SearchKeyStore.hasBraveAPIKey else {
             results = []
             suggestions = []

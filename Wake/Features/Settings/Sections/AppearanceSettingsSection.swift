@@ -9,7 +9,7 @@ struct AppearanceSettingsSection: View {
             AppearancePreview()
 
             SettingsGroup {
-                SettingsRow(label: "Theme") {
+                SettingsRow("theme") {
                     HStack(spacing: 14) {
                         ForEach(ThemePreference.allCases) { theme in
                             ThemeSwatch(theme: theme, isSelected: appearance.theme == theme) {
@@ -19,7 +19,7 @@ struct AppearanceSettingsSection: View {
                     }
                 }
                 SettingsDivider()
-                SettingsRow(label: "Accent color") {
+                SettingsRow("accent") {
                     HStack(spacing: 10) {
                         ForEach(AccentChoice.allCases) { accent in
                             AccentDot(accent: accent, isSelected: appearance.accent == accent) {
@@ -29,13 +29,13 @@ struct AppearanceSettingsSection: View {
                     }
                 }
                 SettingsDivider()
-                SettingsRow(label: "Glass") {
+                SettingsRow("glass") {
                     SettingsSegmented(selection: $appearance.glass, options: GlassStrength.allCases, value: { $0 }, label: \.label)
                 }
             }
 
             SettingsGroup(title: "Trail layout") {
-                SettingsRow(label: "Gap between pages") {
+                SettingsRow("gap") {
                     ViewThatFits(in: .horizontal) {
                         HStack(spacing: 10) {
                             gapPresets
@@ -48,11 +48,11 @@ struct AppearanceSettingsSection: View {
                     }
                 }
                 SettingsDivider()
-                SettingsRow(label: "Corner radius") {
+                SettingsRow("cornerRadius") {
                     SettingsSegmented(selection: $appearance.cornerRadius, options: CornerRadiusOption.allCases, value: \.rawValue, label: \.label)
                 }
                 SettingsDivider()
-                SettingsRow(label: "Page width") {
+                SettingsRow("pageWidth") {
                     SettingsSegmented(selection: $appearance.pageWidth, options: PageWidth.allCases, value: { $0 }, label: \.label)
                 }
             }
