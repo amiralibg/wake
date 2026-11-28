@@ -15,6 +15,8 @@ final class AppearanceSettings {
     var backdrop: BackdropStyle { didSet { store(backdrop.rawValue, .backdrop) } }
     var cardStyle: CardStyle { didSet { store(cardStyle.rawValue, .cardStyle) } }
     var motion: MotionStyle { didSet { store(motion.rawValue, .motion); MotionStyle.current = motion } }
+    /// The actions island's buttons; empty hides the island.
+    var toolbarButtons: [ToolbarButton] { didSet { store(toolbarButtons.map(\.rawValue), .toolbarButtons) } }
 
     @ObservationIgnored private let defaults: UserDefaults
 
@@ -29,7 +31,36 @@ final class AppearanceSettings {
         backdrop = BackdropStyle(rawValue: defaults.string(forKey: Key.backdrop.qualified) ?? "") ?? .glass
         cardStyle = CardStyle(rawValue: defaults.string(forKey: Key.cardStyle.qualified) ?? "") ?? .floating
         motion = MotionStyle(rawValue: defaults.string(forKey: Key.motion.qualified) ?? "") ?? .standard
+        toolbarButtons = (defaults.stringArray(forKey: Key.toolbarButtons.qualified)?.compactMap(ToolbarButton.init(rawValue:))) ?? ToolbarButton.defaults
         MotionStyle.current = motion
+    }
+
+    /// Sets every piece of a preset's look.
+    func apply(_ preset: ThemePreset) {
+        theme = preset.theme
+        accent = preset.accent
+        glass = preset.glass
+        backdrop = preset.backdrop
+        cardStyle = preset.cardStyle
+        gap = preset.gap
+        cornerRadius = preset.cornerRadius
+    }
+
+    /// The preset these settings are exactly, or nil for a custom mix.
+    var preset: ThemePreset? {
+        ThemePreset.allCases.first {
+            $0.theme == theme && $0.accent == accent && $0.glass == glass && $0.backdrop == backdrop
+                && $0.cardStyle == cardStyle && $0.gap == gap && $0.cornerRadius == cornerRadius
+        }
+    }
+
+    func toggle(_ button: ToolbarButton) {
+        if toolbarButtons.contains(button) {
+            toolbarButtons.removeAll { $0 == button }
+        } else {
+            // Keep the island's order the same as the list's.
+            toolbarButtons = ToolbarButton.allCases.filter { toolbarButtons.contains($0) || $0 == button }
+        }
     }
 
     /// NSVisualEffectView follows the app appearance, not SwiftUI's preferredColorScheme,
@@ -39,7 +70,7 @@ final class AppearanceSettings {
     }
 
     private enum Key: String {
-        case theme, accent, glass, gap, cornerRadius, pageWidth, backdrop, cardStyle, motion
+        case theme, accent, glass, gap, cornerRadius, pageWidth, backdrop, cardStyle, motion, toolbarButtons
         var qualified: String { "appearance." + rawValue }
     }
 

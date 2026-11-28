@@ -107,7 +107,7 @@ extension BrowserModel {
         case .reopen: trail.reopenClosed()
         case .newColumn:
             exitColumnMode()
-            showPalette(target: .newColumn)
+            newColumn()
         case .exit: exitColumnMode()
         }
         if trail.columns.isEmpty { exitColumnMode() }

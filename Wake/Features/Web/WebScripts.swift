@@ -24,6 +24,7 @@ enum WebScripts {
     static var baseScript: WKUserScript {
         let scripts: [SharedScript] = [.linkInterceptor, .scrollProbe, .pageState, .scrollSync, .live, .passwords]
         var sources = scripts.map { $0.source(["channel": handlerName]) }
+        sources.append(SharedScript.siteStyles.source(["styles": SiteStyles.shared.payload]))
         // "Add to Wake" on extension store pages; returns at once on every other site.
         if Extensions.isSupported {
             sources.append(SharedScript.extensionStores.source(["channel": handlerName, "state": Extensions.storeState]))

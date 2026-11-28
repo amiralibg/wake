@@ -1,48 +1,82 @@
 import SwiftUI
 
-/// New column · Save moment · Pop out · Share · Zen.
+/// The toolbar's buttons, chosen in Settings ▸ Appearance ▸ Toolbar.
 struct ActionsCapsule: View {
     @Environment(BrowserModel.self) private var browser
+    @Environment(AppearanceSettings.self) private var appearance
 
     var body: some View {
-        HStack(spacing: 0) {
-            ToolbarIconButton(symbol: "plus", label: "New Column (⌘T)") {
-                browser.showPalette(target: .newColumn)
+        if !appearance.toolbarButtons.isEmpty {
+            HStack(spacing: 0) {
+                ForEach(appearance.toolbarButtons) { button($0) }
             }
-            ToolbarIconButton(symbol: "bookmark", label: "Save Moment (⌘D) · right-click for Moments") {
+            .padding(.horizontal, 4)
+            .frame(height: Metrics.capsuleHeight)
+            .glassSurface(Capsule())
+        }
+    }
+
+    @ViewBuilder private func button(_ kind: ToolbarButton) -> some View {
+        let page = browser.webPage
+        switch kind {
+        case .back:
+            ToolbarIconButton(symbol: kind.symbol, label: "Back (\(keys(.back)))") { browser.page?.goBack() }
+                .disabled(browser.page?.canGoBack != true)
+        case .forward:
+            ToolbarIconButton(symbol: kind.symbol, label: "Forward (\(keys(.forward)))") { browser.page?.goForward() }
+                .disabled(browser.page?.canGoForward != true)
+        case .reload:
+            ToolbarIconButton(symbol: page?.isLoading == true ? "xmark" : kind.symbol, label: "Reload (\(keys(.reload)))") {
+                if page?.isLoading == true { page?.stopLoading() } else { page?.reload() }
+            }
+            .disabled(page?.url == nil)
+        case .newColumn:
+            ToolbarIconButton(symbol: kind.symbol, label: "New Column (\(keys(.newColumn)))") { browser.newColumn() }
+        case .find:
+            ToolbarIconButton(symbol: kind.symbol, label: "Find in Page (\(keys(.findInPage)))") { browser.showFind() }
+                .disabled(page?.url == nil)
+        case .saveMoment:
+            ToolbarIconButton(symbol: kind.symbol, label: "Save Moment (\(keys(.saveMoment))) · right-click for Moments") {
                 browser.saveMoment()
             }
-            .disabled(browser.webPage?.url?.scheme?.hasPrefix("http") != true)
+            .disabled(page?.url?.scheme?.hasPrefix("http") != true)
             .contextMenu {
-                Button("Show Moments (⌥⌘B)") { browser.showMoments() }
+                Button("Show Moments") { browser.showMoments() }
                 Button("Moments Relevant Here") { browser.showMoments(.relevant) }
             }
+        case .popOut:
             ToolbarIconButton(
-                symbol: browser.webPage?.isPickingPopOut == true ? "square.on.square.fill" : "square.on.square",
-                label: "Pop Out: pick part of the page to float it, live (⌥⌘O)"
+                symbol: page?.isPickingPopOut == true ? "square.on.square.fill" : kind.symbol,
+                label: "Pop Out: pick part of the page to float it, live (\(keys(.popOut)))"
             ) {
                 browser.togglePopOutPicker()
             }
-            .disabled(browser.webPage?.url == nil)
+            .disabled(page?.url == nil)
+        case .history:
+            ToolbarIconButton(symbol: kind.symbol, label: "History (\(keys(.history)))") { browser.showHistory() }
+        case .share:
             if let url = browser.page?.url {
                 ShareLink(item: url) {
-                    ToolbarIcon(symbol: "square.and.arrow.up")
+                    ToolbarIcon(symbol: kind.symbol)
                 }
                 .buttonStyle(.plain)
                 .help("Share")
             } else {
-                ToolbarIcon(symbol: "square.and.arrow.up").opacity(0.35)
+                ToolbarIcon(symbol: kind.symbol).opacity(0.35)
             }
+        case .zen:
             ToolbarIconButton(
-                symbol: browser.isZen ? "arrow.down.right.and.arrow.up.left" : "arrow.up.left.and.arrow.down.right",
-                label: browser.isZen ? "Leave Zen (⌘\\)" : "Zen: hide everything but pages (⌘\\)"
+                symbol: browser.isZen ? "arrow.down.right.and.arrow.up.left" : kind.symbol,
+                label: browser.isZen ? "Leave Zen (\(keys(.zen)))" : "Zen: hide everything but pages (\(keys(.zen)))"
             ) {
                 withAnimation(.trail) { browser.isZen.toggle() }
             }
         }
-        .padding(.horizontal, 4)
-        .frame(height: Metrics.capsuleHeight)
-        .glassSurface(Capsule())
+    }
+
+    /// The command's current keys, so tooltips follow Settings ▸ Shortcuts.
+    private func keys(_ command: WakeCommand) -> String {
+        ShortcutStore.shared.combo(for: command)?.display ?? "no shortcut"
     }
 }
 

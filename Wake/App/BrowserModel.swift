@@ -57,6 +57,8 @@ final class BrowserModel {
     var showsExtensionsMenu = false
     /// The "Import from Another Browser" sheet.
     var isImportingBrowserData = false
+    /// A site style being added or edited, in a sheet.
+    var siteStyleDraft: SiteStyle?
     /// After ⌃W, single keys move between columns (see `ColumnMode`).
     var isColumnModeActive = false
     /// The list of every column in the thread, from the toolbar's +N or ⇧⌘A.
@@ -85,6 +87,13 @@ final class BrowserModel {
     static var everyWindow: [BrowserModel] {
         all.removeAll { $0.value == nil }
         return all.compactMap(\.value)
+    }
+
+    /// Every live page in every window and loaded thread.
+    static var everyPage: [BrowserPage] {
+        all.compactMap(\.value).flatMap { model in
+            ([model.thread] + model.backgroundThreads).flatMap(\.trail.columns)
+        }
     }
 
     /// The browser that drives `window`.
@@ -252,6 +261,22 @@ final class BrowserModel {
             isPaletteOpen = true
             if isZen { isChromeRevealed = false }
         }
+    }
+
+    /// ⌘T and +: the page set in Settings ▸ General, or the Deck's search.
+    func newColumn() {
+        if let url = BrowsingSettings.shared.newColumnURL {
+            hidePalette()
+            trail.open(url)
+        } else {
+            showPalette(target: .newColumn)
+        }
+    }
+
+    /// Style This Site: edits the focused page's site style, or starts one.
+    func editSiteStyle() {
+        guard let url = webPage?.url, let host = url.host() else { return }
+        siteStyleDraft = SiteStyles.shared.style(for: url) ?? SiteStyle(site: SiteStyles.normalize(host), css: "")
     }
 
     func hidePalette() {

@@ -172,3 +172,113 @@ enum CardStyle: String, CaseIterable, Identifiable {
         }
     }
 }
+
+/// A complete look in one choice. Picking one sets the pieces below it; changing a
+/// piece afterwards makes it "Custom".
+enum ThemePreset: String, CaseIterable, Identifiable {
+    case tide, graphite, paper, midnight, meadow
+
+    var id: Self { self }
+
+    var label: String { rawValue.capitalized }
+
+    var theme: ThemePreference {
+        switch self {
+        case .tide, .meadow: .auto
+        case .graphite, .midnight: .dark
+        case .paper: .light
+        }
+    }
+
+    var accent: AccentChoice {
+        switch self {
+        case .tide: .teal
+        case .graphite: .graphite
+        case .paper: .orange
+        case .midnight: .purple
+        case .meadow: .green
+        }
+    }
+
+    var glass: GlassStrength {
+        switch self {
+        case .tide, .meadow: .balanced
+        case .graphite, .paper: .subtle
+        case .midnight: .clear
+        }
+    }
+
+    var backdrop: BackdropStyle {
+        switch self {
+        case .tide: .gradient
+        case .graphite: .solid
+        case .paper: .solid
+        case .midnight: .tinted
+        case .meadow: .gradient
+        }
+    }
+
+    var cardStyle: CardStyle {
+        switch self {
+        case .tide, .midnight, .meadow: .floating
+        case .graphite: .flat
+        case .paper: .outlined
+        }
+    }
+
+    var gap: CGFloat {
+        switch self {
+        case .graphite: GapPreset.tight.rawValue
+        case .paper: GapPreset.roomy.rawValue
+        default: GapPreset.balanced.rawValue
+        }
+    }
+
+    var cornerRadius: CGFloat {
+        switch self {
+        case .graphite: CornerRadiusOption.soft.rawValue
+        case .paper: CornerRadiusOption.soft.rawValue
+        case .midnight: CornerRadiusOption.pill.rawValue
+        default: CornerRadiusOption.round.rawValue
+        }
+    }
+}
+
+/// Buttons the toolbar's actions island can show, in their order there.
+enum ToolbarButton: String, CaseIterable, Identifiable, Codable {
+    case back, forward, reload, newColumn, find, saveMoment, popOut, history, share, zen
+
+    var id: Self { self }
+
+    var label: String {
+        switch self {
+        case .back: "Back"
+        case .forward: "Forward"
+        case .reload: "Reload"
+        case .newColumn: "New Column"
+        case .find: "Find"
+        case .saveMoment: "Save Moment"
+        case .popOut: "Pop Out"
+        case .history: "History"
+        case .share: "Share"
+        case .zen: "Zen"
+        }
+    }
+
+    var symbol: String {
+        switch self {
+        case .back: "chevron.left"
+        case .forward: "chevron.right"
+        case .reload: "arrow.clockwise"
+        case .newColumn: "plus"
+        case .find: "text.magnifyingglass"
+        case .saveMoment: "bookmark"
+        case .popOut: "square.on.square"
+        case .history: "clock"
+        case .share: "square.and.arrow.up"
+        case .zen: "arrow.up.left.and.arrow.down.right"
+        }
+    }
+
+    static let defaults: [ToolbarButton] = [.newColumn, .saveMoment, .popOut, .share, .zen]
+}

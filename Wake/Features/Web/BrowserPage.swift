@@ -416,6 +416,7 @@ final class BrowserPage: NSObject, Identifiable {
                     if let self {
                         Extensions.pageChanged(self, .url)
                         PasswordAutofill.shared.pageNavigated(self)
+                        SiteStyles.shared.pageNavigated(self)
                     }
                 }
             },

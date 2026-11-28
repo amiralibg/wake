@@ -159,6 +159,11 @@ func run() {
     check("passwords never reports a password on focus or typing",
           !recorder.messages.contains { $0.body["type"] as? String == "passwords" && $0.body["event"] as? String != "submit" && $0.body["password"] != nil })
 
+    _ = eval(view, SharedScript.siteStyles.source(["styles": [["site": "example.test", "css": "#para { color: rgb(1, 2, 3) !important; }"], ["site": "other.test", "css": "#para { color: red !important; }"]]]))
+    check("site-styles applies this site's CSS only", eval(view, "getComputedStyle(document.getElementById('para')).color", world: .page) as? String == "rgb(1, 2, 3)")
+    _ = eval(view, "__wakeStyles.apply([])")
+    check("site-styles updates in place", eval(view, "getComputedStyle(document.getElementById('para')).color", world: .page) as? String != "rgb(1, 2, 3)")
+
     let restored = eval(view, SharedScript.momentRestore.source(["key": "The quick brown", "prefix": "over the lazy dog. ", "scrollY": 0, "scrollFraction": 0])) as? Bool
     check("moment-restore finds the second match", restored == true, restored as Any)
     let highlighted = eval(view, "CSS.highlights.get('wake-moment') ? [...CSS.highlights.get('wake-moment')][0].startOffset : -1") as? Int

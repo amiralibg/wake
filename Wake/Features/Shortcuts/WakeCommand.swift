@@ -25,7 +25,7 @@ enum WakeCommand: String, CaseIterable, Identifiable, Codable, Sendable {
     case developerMode, devTools, webInspector, inspectElement, console, pageSource
     case network, storage, performance, emptyCaches, inspectComponents, responsivePreview
     // Apps and data
-    case pinApp, importData, addExtension, allowAdsOnSite
+    case pinApp, importData, addExtension, allowAdsOnSite, styleSite
 
     var id: String { rawValue }
 
@@ -62,7 +62,7 @@ enum WakeCommand: String, CaseIterable, Identifiable, Codable, Sendable {
     var category: Category {
         switch self {
         case .settings, .showShortcuts, .extensions, .checkForUpdates, .pinApp, .importData, .addExtension: .wake
-        case .allowAdsOnSite: .page
+        case .allowAdsOnSite, .styleSite: .page
         case .newColumn, .openLocation, .openFile, .closeColumn, .reopenColumn, .duplicateColumn,
              .previousColumn, .nextColumn, .columnLeft, .columnRight, .showAllColumns,
              .cycleColumns, .cycleColumnsBackwards, .lastColumn, .moveColumnLeft, .moveColumnRight,
@@ -139,6 +139,7 @@ enum WakeCommand: String, CaseIterable, Identifiable, Codable, Sendable {
         case .importData: "Import from Another Browser"
         case .addExtension: "Add Extension"
         case .allowAdsOnSite: "Allow Ads on This Site"
+        case .styleSite: "Style This Site"
         }
     }
 
@@ -165,6 +166,7 @@ enum WakeCommand: String, CaseIterable, Identifiable, Codable, Sendable {
         case .devTools, .webInspector, .inspectElement: ["inspector", "developer tools", "debug"]
         case .pinApp: ["web app", "capsule"]
         case .importData: ["chrome", "firefox", "safari", "arc", "migrate"]
+        case .styleSite: ["css", "custom style", "boost", "font", "reading width", "theme site"]
         case .allowAdsOnSite: ["ad blocker", "content blocker", "trackers", "disable blocking", "whitelist", "allowlist"]
         default: []
         }
@@ -225,7 +227,7 @@ enum WakeCommand: String, CaseIterable, Identifiable, Codable, Sendable {
         case .inspectComponents: KeyCombo("c", [.command, .option])
         case .responsivePreview: KeyCombo("p", [.command, .option])
         case .pinApp: KeyCombo("p", [.command, .shift])
-        case .extensions, .checkForUpdates, .network, .storage, .performance, .importData, .addExtension, .allowAdsOnSite: nil
+        case .extensions, .checkForUpdates, .network, .storage, .performance, .importData, .addExtension, .allowAdsOnSite, .styleSite: nil
         }
     }
 
@@ -237,6 +239,7 @@ enum WakeCommand: String, CaseIterable, Identifiable, Codable, Sendable {
         switch self {
         case .checkForUpdates: AppUpdater.shared.canCheckForUpdates
         case .addExtension, .extensions: Extensions.isSupported
+        case .styleSite: browser?.webPage?.url?.host() != nil
         case .allowAdsOnSite: ContentBlocker.shared.isEnabled && browser?.webPage?.url?.host() != nil
         case .back: browser?.page?.canGoBack ?? false
         case .forward: browser?.page?.canGoForward ?? false
@@ -260,7 +263,7 @@ enum WakeCommand: String, CaseIterable, Identifiable, Codable, Sendable {
         case .showShortcuts: browser?.showSettings(.shortcuts)
         case .extensions: browser?.showSettings(.extensions)
         case .checkForUpdates: AppUpdater.shared.checkForUpdates()
-        case .newColumn: browser?.showPalette(target: .newColumn)
+        case .newColumn: browser?.newColumn()
         case .openLocation: browser?.showPalette(target: .currentColumn)
         case .openFile: browser?.openLocalFile()
         case .closeColumn: Self.closeColumn()
@@ -318,6 +321,7 @@ enum WakeCommand: String, CaseIterable, Identifiable, Codable, Sendable {
         case .pinApp: if let page = browser?.webPage { browser?.pin(page) }
         case .importData: browser?.isImportingBrowserData = true
         case .addExtension: Extensions.chooseAndInstall()
+        case .styleSite: browser?.editSiteStyle()
         case .allowAdsOnSite:
             guard let page = browser?.webPage else { return }
             ContentBlocker.shared.toggleAllowed(page.url)

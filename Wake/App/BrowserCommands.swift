@@ -72,6 +72,8 @@ struct BrowserCommands: Commands {
             item(.widerColumn, "Wider Column")
             item(.narrowerColumn, "Narrower Column")
             item(.defaultColumnWidth, "Default Column Width")
+            Divider()
+            item(.styleSite, "Style This Site…")
             if let page = browser?.webPage, let url = page.url, SiteWidthRules.canHaveRule(url) {
                 if SiteWidthRules.shared.minimumWidth(for: url) == nil {
                     Button("Keep This Width on This Site") { browser?.keepWidthForSite(of: page) }

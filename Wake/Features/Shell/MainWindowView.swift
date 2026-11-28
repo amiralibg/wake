@@ -69,6 +69,11 @@ struct MainWindowView: View {
         .onEscapeKey(isActive: browser.hasOverlay, perform: browser.dismissOverlays)
         .columnModeKeys(browser)
         .sheet(isPresented: $browser.isImportingBrowserData) { ImportSheet() }
+        .sheet(item: $browser.siteStyleDraft) { draft in
+            SiteStyleEditor(style: draft, isNew: !SiteStyles.shared.styles.contains { $0.id == draft.id }) {
+                browser.siteStyleDraft = nil
+            }
+        }
         .sheet(item: $browser.extensionPrompt) { ExtensionInstallSheet(prompt: $0) }
         // Limitation: over a page the web view takes the drop itself; this covers the
         // toolbar, the gaps between pages and an empty window.

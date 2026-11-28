@@ -19,6 +19,12 @@ struct GeneralSettingsSection: View {
                     .fixedSize()
                 }
                 SettingsDivider()
+                SettingsRow("newColumnPage") {
+                    TextField("Search and the Deck", text: $browsing.newColumnPage)
+                        .textFieldStyle(.roundedBorder)
+                        .frame(width: 220)
+                }
+                SettingsDivider()
                 SettingsRow("resumeThread", detail: "New windows pick up where you left off.") {
                     Toggle("", isOn: $browsing.restoresLastThread)
                         .toggleStyle(.switch)

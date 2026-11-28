@@ -20,6 +20,9 @@ final class BrowsingSettings {
     /// On: ⌃W starts column mode (Vim's window prefix). Off for pages that need ⌃W themselves.
     var columnModeKeyEnabled: Bool { didSet { defaults.set(columnModeKeyEnabled, forKey: "browsing.columnModeKey") } }
 
+    /// What ⌘T and + open: the Deck's search (empty), or this page.
+    var newColumnPage: String { didSet { defaults.set(newColumnPage, forKey: "browsing.newColumnPage") } }
+
     /// Where typed searches go.
     var searchEngine: SearchEngine { didSet { defaults.set(searchEngine.rawValue, forKey: "search.engine") } }
     /// The results URL for `.custom`, with `%s` for the query.
@@ -35,9 +38,16 @@ final class BrowsingSettings {
         capsuleHidesAtEdge = defaults.bool(forKey: "browsing.capsuleHides")
         shiftScrollMovesColumns = defaults.object(forKey: "browsing.shiftScrollColumns") as? Bool ?? true
         columnModeKeyEnabled = defaults.object(forKey: "browsing.columnModeKey") as? Bool ?? true
+        newColumnPage = defaults.string(forKey: "browsing.newColumnPage") ?? ""
         searchEngine = SearchEngine(rawValue: defaults.string(forKey: "search.engine") ?? "") ?? .duckDuckGo
         customSearchTemplate = defaults.string(forKey: "search.customTemplate") ?? ""
         showsSearchSuggestions = defaults.object(forKey: "search.suggestions") as? Bool ?? true
+    }
+
+    /// The page new columns open with, when one is set.
+    var newColumnURL: URL? {
+        let text = newColumnPage.trimmingCharacters(in: .whitespaces)
+        return text.isEmpty ? nil : URLInput.url(from: text)
     }
 
     /// The engine actually used: a custom engine without a valid template falls back to DuckDuckGo.

@@ -17,6 +17,7 @@ enum SharedScript: String, CaseIterable {
     case visibleText = "visible-text"
     case findCount = "find-count"
     case passwords
+    case siteStyles = "site-styles"
     case favicon
     case popOutPicker = "popout-picker"
     case popOutIsolate = "popout-isolate"
