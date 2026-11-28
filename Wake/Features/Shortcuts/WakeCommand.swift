@@ -25,7 +25,7 @@ enum WakeCommand: String, CaseIterable, Identifiable, Codable, Sendable {
     case developerMode, devTools, webInspector, inspectElement, console, pageSource
     case network, storage, performance, emptyCaches, inspectComponents, responsivePreview
     // Apps and data
-    case pinApp, importData, addExtension
+    case pinApp, importData, addExtension, allowAdsOnSite
 
     var id: String { rawValue }
 
@@ -62,6 +62,7 @@ enum WakeCommand: String, CaseIterable, Identifiable, Codable, Sendable {
     var category: Category {
         switch self {
         case .settings, .showShortcuts, .extensions, .checkForUpdates, .pinApp, .importData, .addExtension: .wake
+        case .allowAdsOnSite: .page
         case .newColumn, .openLocation, .openFile, .closeColumn, .reopenColumn, .duplicateColumn,
              .previousColumn, .nextColumn, .columnLeft, .columnRight, .showAllColumns,
              .cycleColumns, .cycleColumnsBackwards, .lastColumn, .moveColumnLeft, .moveColumnRight,
@@ -137,6 +138,7 @@ enum WakeCommand: String, CaseIterable, Identifiable, Codable, Sendable {
         case .pinApp: "Pin Page as App"
         case .importData: "Import from Another Browser"
         case .addExtension: "Add Extension"
+        case .allowAdsOnSite: "Allow Ads on This Site"
         }
     }
 
@@ -163,6 +165,7 @@ enum WakeCommand: String, CaseIterable, Identifiable, Codable, Sendable {
         case .devTools, .webInspector, .inspectElement: ["inspector", "developer tools", "debug"]
         case .pinApp: ["web app", "capsule"]
         case .importData: ["chrome", "firefox", "safari", "arc", "migrate"]
+        case .allowAdsOnSite: ["ad blocker", "content blocker", "trackers", "disable blocking", "whitelist", "allowlist"]
         default: []
         }
     }
@@ -222,7 +225,7 @@ enum WakeCommand: String, CaseIterable, Identifiable, Codable, Sendable {
         case .inspectComponents: KeyCombo("c", [.command, .option])
         case .responsivePreview: KeyCombo("p", [.command, .option])
         case .pinApp: KeyCombo("p", [.command, .shift])
-        case .extensions, .checkForUpdates, .network, .storage, .performance, .importData, .addExtension: nil
+        case .extensions, .checkForUpdates, .network, .storage, .performance, .importData, .addExtension, .allowAdsOnSite: nil
         }
     }
 
@@ -234,6 +237,7 @@ enum WakeCommand: String, CaseIterable, Identifiable, Codable, Sendable {
         switch self {
         case .checkForUpdates: AppUpdater.shared.canCheckForUpdates
         case .addExtension, .extensions: Extensions.isSupported
+        case .allowAdsOnSite: ContentBlocker.shared.isEnabled && browser?.webPage?.url?.host() != nil
         case .back: browser?.page?.canGoBack ?? false
         case .forward: browser?.page?.canGoForward ?? false
         case .closeColumn, .duplicateColumn, .reload, .reloadWithoutCache, .stopLoading, .zoomIn, .zoomOut,
@@ -314,6 +318,9 @@ enum WakeCommand: String, CaseIterable, Identifiable, Codable, Sendable {
         case .pinApp: if let page = browser?.webPage { browser?.pin(page) }
         case .importData: browser?.isImportingBrowserData = true
         case .addExtension: Extensions.chooseAndInstall()
+        case .allowAdsOnSite:
+            guard let page = browser?.webPage else { return }
+            ContentBlocker.shared.toggleAllowed(page.url)
         }
     }
 

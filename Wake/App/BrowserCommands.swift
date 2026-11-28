@@ -111,6 +111,9 @@ struct BrowserCommands: Commands {
             item(.stopLoading, "Stop Loading")
             Divider()
             item(.popOut, "Pop Out Element…")
+            if ContentBlocker.shared.isEnabled {
+                item(.allowAdsOnSite, ContentBlocker.shared.isAllowed(browser?.webPage?.url) ? "Block Ads on This Site" : "Allow Ads on This Site")
+            }
         }
 
         CommandMenu("Moments") {

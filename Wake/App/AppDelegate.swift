@@ -13,6 +13,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             AppUpdater.shared.start()
             MemoryPressure.start()
             Extensions.start()
+            ContentBlocker.shared.start()
         }
         #if BENCH
         MainActor.assumeIsolated { Benchmark.startIfRequested() }

@@ -151,6 +151,11 @@ extension SettingsEntry {
                       keywords: ["staging", "production", "local", "git", "branch", "environments"]),
 
         // Privacy
+        SettingsEntry(id: "blockAds", section: .privacy, group: "Blocking", label: "Block ads and trackers",
+                      detail: "EasyList and EasyPrivacy, applied inside WebKit. Pages load less, so they use less memory and CPU.",
+                      keywords: ["ad blocker", "adblock", "ublock", "content blocker", "trackers", "easylist", "privacy", "performance"]),
+        SettingsEntry(id: "blockAllowed", section: .privacy, group: "Blocking", label: "Sites where ads are allowed",
+                      keywords: ["whitelist", "allowlist", "exceptions", "disable blocking"]),
         SettingsEntry(id: "importBrowser", section: .privacy, group: "Bring your data", label: "Import from another browser",
                       detail: "History, searches, cookies and site storage from Chrome, Arc, Dia, Brave, Edge, Firefox, Zen, Safari and more.",
                       keywords: ["migrate", "chrome", "arc", "firefox", "safari", "zen", "brave", "edge", "cookies"]),
